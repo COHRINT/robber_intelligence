@@ -13,7 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   geometry_msgs
+  nav_msgs
   tf
+  move_base
 )
 
 ## System dependencies are found with CMake's conventions
@@ -72,6 +74,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  nav_msgs
 )
 
 ################################################
@@ -150,6 +153,14 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+# Taken from tutorial on how to build cpp files
+include_directories(include ${catkin_INCLUDE_DIRS})
+
+add_executable(odom src/odom.cpp)
+target_link_libraries(odom ${catkin_LIBRARIES})
+#add_dependencies(odom beginner_tutorials_generate_messages_cpp) # don't need this as of groovy b/c target link libraries
+
 
 #############
 ## Install ##
