@@ -157,12 +157,11 @@ include_directories(
 # Taken from tutorial on how to build cpp files
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(odom src/odom.cpp)
-target_link_libraries(odom ${catkin_LIBRARIES})
+#add_executable(odom src/odom.cpp)
+#target_link_libraries(odom ${catkin_LIBRARIES})
 #add_dependencies(odom beginner_tutorials_generate_messages_cpp) # don't need this as of groovy b/c target link libraries
-
-add_executable(tf_listener src/tf_listener.cpp)
-target_link_libraries(tf_listener ${catkin_LIBRARIES})
+#add_executable(tf_listener src/tf_listener.cpp)
+#target_link_libraries(tf_listener ${catkin_LIBRARIES})
 
 #############
 ## Install ##
