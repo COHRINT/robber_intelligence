@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 import rospy
 import geometry_msgs
 import nav_msgs
 import move_base_msgs
 import actionlib
-import actionlib_msgs.msg as act_msgs import *
+import actionlib_msgs.msg as act_msgs # import *
 import geometry_msgs.msg as geo_msgs # geo_msgs.Pose, geo_msgs.PoseWithCovarianceStamped, geo_msgs.Point, geo_msgs.Quaternion, geo_msgs.Twist, geo_msgs.Vector3
 import move_base_msgs.msg as mov_msgs # import mov_msgs.MoveBaseAction, mov_msgs.MoveBaseGoal
 
@@ -11,7 +13,7 @@ def goalPub():
     # 2d Nav Goal
     # ask user for a goal if needed, otherwise automatically set by endpoint
     rospy.init_node('goalPub')
-    navGoalPub = rospy.Publisher('roy/move_base/goal', mov_msgs.MoveBaseGoal, queue_size=10) # could be /move_base/current_goal
+    navGoalPub = rospy.Publisher('move_base/goal', mov_msgs.MoveBaseGoal, queue_size=10) # could be /move_base/current_goal
     rate = rospy.Rate(10)
 
     goal = mov_msgs.MoveBaseGoal()
@@ -24,7 +26,7 @@ def goalPub():
     vertexDict = {'corner1':geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0,0,0,0)), 'corner2':geo_msgs.Pose(geo_msgs.Point(1,-1,0), geo_msgs.Quaternion(0,0,0,0)),
         'corner3':geo_msgs.Pose(geo_msgs.Point(-1,-1,0), geo_msgs.Quaternion(0,0,0,0)), 'corner4':geo_msgs.Pose(geo_msgs.Point(-1,1,0), geo_msgs.Quaternion(0,0,0,0))}
     vertexKeys = vertexDict.keys()
-    # FUCK STEVE, HE KNEW FROM THE BEGINNING, WHAT IS THE COORDINATE SYSTEM?
+    # STEVE, HE KNEW FROM THE BEGINNING, WHAT IS THE COORDINATE SYSTEM?
     # is it bad coding practice to create classes for ros nodes instead of functions in python? I usually see only functions in the tuturial but cant get around
     # rospy subscriber callback function.
 
@@ -35,7 +37,7 @@ def goalPub():
     mover_base.wait_for_server(rospy.Duration(10))
 
     # Keeping track of things
-    n_locations = len(locations)
+    n_locations = len(vertexes)
     i = 0
     location = ""
     last_location = ""
@@ -61,29 +63,30 @@ def goalPub():
         i += 1
 
         goal = mov_msgs.MoveBaseGoal()
-        goal.target_pose.pose = locations[location]
+        goal.target_pose.pose = vertexes[i]
         goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
 
         # Start the robot toward the next location
-        move_base.send_goal(goal)
+        mover_base.send_goal(goal)
 
         # Allow 5 minutes to get there
-        move_base.wait_for_result(rospy.Duration(300))
+        mover_base.wait_for_result(rospy.Duration(300))
 
         # Check for success or failure
-        if not finished_within_time:
-            move_base.cancel_goal()
-            rospy.loginfo("FAILURE TO REACH DESTINATION... SHUTTING DOWN")
-            move_base.cancel_goal()
-            cmd_vel_pub.publish(geo_msgs.Twist(geo_msgs.Vector3(0,0,0),geo_msgs.Vector3(0,0,0)))
-            # TODO: Shutdown function? or capabilities
+        # if not finished_within_time:
+        #     mover_base.cancel_goal()
+        #     rospy.loginfo("FAILURE TO REACH DESTINATION... SHUTTING DOWN")
+        #     mover_base.cancel_goal()
+        #     #cmd_vel_pub.publish(geo_msgs.Twist(geo_msgs.Vector3(0,0,0),geo_msgs.Vector3(0,0,0)))
+        #     # TODO: Shutdown function? or capabilities
+        # else:
+        state = mover_base.get_state()
+        if state == "SUCCEEDED":
+            rospy.loginfo("Just Reached " + vertexKeys[i])
         else:
-            state = move_base.get_state()
-            if state == "SUCCEEDED":
-                rospy.loginfo("Just Reached " + vertexKeys[i])
-            else:
-              rospy.loginfo("Goal failed")
+          rospy.loginfo("Goal failed")
+          break
         rospy.sleep(1)
 
     # print("Position: ")
