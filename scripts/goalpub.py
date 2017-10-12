@@ -54,8 +54,8 @@ def goalPub():
     # Begin the main loop and run through a sequence of locations
     while not rospy.is_shutdown():
 
-        if i == 0:
-            i = n_locations
+        if i == n_locations:
+            i = 0
 
         location = vertexes[i]
         i += 1
