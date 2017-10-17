@@ -1,21 +1,51 @@
 <launch>
+  <arg name="robot_name" value="$(env ROBOT)" />
+
+	<arg name="catch_dist" default="0.5" />
+
+
+  <group ns="$(arg robot_name)">
   <arg name="custom_param_file" default="$(find turtlebot_navigation)/param/dummy.yaml"/>
-  <include file="$(find turtlebot_bringup)/launch/minimal.launch" />
+  <include file="$(find turtlebot_bringup)/launch/minimal.launch">
+    <arg name="robot_name" value="$(arg robot_name)" />
+  </include>
+
+<!-- Kinect/Sensor Data -->
+	<!--
   <include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
     <arg name="rgb_processing" value="false" />
     <arg name="depth_registration" value="false" />
-    <arg name="depth_processing" value="false" />
-    
-    <!-- We must specify an absolute topic name because if not it will be prefixed by "$(arg camera)".
-         Probably is a bug in the nodelet manager: https://github.com/ros/nodelet_core/issues/7 --> 
-    <arg name="scan_topic" value="/scan" />
-  </include>
+    <arg name="depth_processing" value="false" />  
+	<arg name="depth_registered_processing" value="false" />
+	<arg name="disparity_processing" value="false" />
+	<arg name="disparity_registered_processing" value="false" />
+    <arg name="scan_topic" value="/$(arg robot_name)/scan" />
+    <arg name="robot_name" value="$(arg robot_name)" />
+  </include>  -->
 
   <!-- Map server -->
   <arg name="map_file" default="/home/odroid/robber_intelligence/models/map2_occupancy.yaml"/>
-  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" required="true"/> 
+
 
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml">
-    <arg name="custom_param_file" value="$(arg custom_param_file)"/>
+    <arg name="custom_param_file" value="$(arg custom_param_file)" />
+    <arg name="odom_frame_id"   value="$(arg robot_name)/odom"/>
+    <arg name="base_frame_id"   value="$(arg robot_name)/base_footprint"/>
+    <arg name="global_frame_id" value="/map"/>
+    <arg name="odom_topic" value="/$(arg robot_name)/odom" />
+    <arg name="laser_topic" value="/$(arg robot_name)/scan" />
+
   </include>
+
+
+<!--  <node name="theora_republisher" pkg="image_transport" type="republish" args="raw in:=camera/rgb/image_color theora out:=theora" /> -->
+
+</group>
+<!--
+<include file="$(find caught)/launch/caught.launch">
+    <arg name="catch_dist" value="$(arg catch_dist)" />
+    <arg name="cop_name" value="$(arg robot_name)" />
+  </include> 
+-->
 </launch>

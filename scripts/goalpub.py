@@ -32,7 +32,7 @@ def goalPub():
 
     #origin = geo_msgs.Pose(geo_msgs.Point(0,0,0), geo_msgs.Quaternion(0,0,0,0))
 
-    mover_base = actionlib.SimpleActionClient("move_base", mov_msgs.MoveBaseAction)
+    mover_base = actionlib.SimpleActionClient("deckard/move_base", mov_msgs.MoveBaseAction)
 
     mover_base.wait_for_server(rospy.Duration(10))
 
@@ -53,14 +53,12 @@ def goalPub():
 
     rospy.loginfo("Starting Square Movement VROOM VROOM")
 
-    # Begin the main loop and run through a sequence of locations
+    # Go through the series of locations indefinitely
     while not rospy.is_shutdown():
-
+        i += 1
         if i == n_locations:
             i = 0
-
         location = vertexes[i]
-        i += 1
 
         goal = mov_msgs.MoveBaseGoal()
         goal.target_pose.pose = vertexes[i]
@@ -71,7 +69,7 @@ def goalPub():
         mover_base.send_goal(goal)
 
         # Allow 5 minutes to get there
-        mover_base.wait_for_result(rospy.Duration(300))
+        mover_base.wait_for_result(rospy.Duration(3000))
 
         # Check for success or failure
         # if not finished_within_time:
