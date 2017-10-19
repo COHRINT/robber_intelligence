@@ -21,10 +21,10 @@ def goalPub():
     goal.target_pose.header.stamp = 0
     goal.target_pose.header.frame_id = ""
 
-    vertexes = [geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0,0,0,0)), geo_msgs.Pose(geo_msgs.Point(1,-1,0), geo_msgs.Quaternion(0,0,0,0)),
-        geo_msgs.Pose(geo_msgs.Point(-1,-1,0), geo_msgs.Quaternion(0,0,0,0)), geo_msgs.Pose(geo_msgs.Point(-1,1,0), geo_msgs.Quaternion(0,0,0,0))]
-    vertexDict = {'corner1':geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0,0,0,0)), 'corner2':geo_msgs.Pose(geo_msgs.Point(1,-1,0), geo_msgs.Quaternion(0,0,0,0)),
-        'corner3':geo_msgs.Pose(geo_msgs.Point(-1,-1,0), geo_msgs.Quaternion(0,0,0,0)), 'corner4':geo_msgs.Pose(geo_msgs.Point(-1,1,0), geo_msgs.Quaternion(0,0,0,0))}
+    vertexes = [geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0,0,0,1)), geo_msgs.Pose(geo_msgs.Point(1,-1,0), geo_msgs.Quaternion(0,0,0,1)),
+        geo_msgs.Pose(geo_msgs.Point(-1,-1,0), geo_msgs.Quaternion(0,0,0,1)), geo_msgs.Pose(geo_msgs.Point(-1,1,0), geo_msgs.Quaternion(0,0,0,1))]
+    vertexDict = {'corner1':geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0,0,0,1)), 'corner2':geo_msgs.Pose(geo_msgs.Point(1,-1,0), geo_msgs.Quaternion(0,0,0,1)),
+        'corner3':geo_msgs.Pose(geo_msgs.Point(-1,-1,0), geo_msgs.Quaternion(0,0,0,1)), 'corner4':geo_msgs.Pose(geo_msgs.Point(-1,1,0), geo_msgs.Quaternion(0,0,0,1))}
     vertexKeys = vertexDict.keys()
     # STEVE, HE KNEW FROM THE BEGINNING, WHAT IS THE COORDINATE SYSTEM?
     # is it bad coding practice to create classes for ros nodes instead of functions in python? I usually see only functions in the tuturial but cant get around
@@ -32,7 +32,7 @@ def goalPub():
 
     #origin = geo_msgs.Pose(geo_msgs.Point(0,0,0), geo_msgs.Quaternion(0,0,0,0))
 
-    mover_base = actionlib.SimpleActionClient("deckard/move_base", mov_msgs.MoveBaseAction)
+    mover_base = actionlib.SimpleActionClient("roy/move_base", mov_msgs.MoveBaseAction)
 
     mover_base.wait_for_server(rospy.Duration(10))
 
@@ -43,7 +43,7 @@ def goalPub():
     last_location = ""
 
     zero_covariance = [[0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0], [0,0,0]]
-    origin = geo_msgs.PoseWithCovarianceStamped(geo_msgs.Pose(geo_msgs.Point(0,0,0), geo_msgs.Quaternion(0,0,0,0)), zero_covariance)
+    origin = geo_msgs.PoseWithCovarianceStamped(geo_msgs.Pose(geo_msgs.Point(0,0,0), geo_msgs.Quaternion(0,0,0,1)), zero_covariance)
     initialpose = origin
     # Get the initial pose from the user
     # initialpose = geo_msgs.PoseWithCovarianceStamped()
@@ -61,7 +61,7 @@ def goalPub():
         location = vertexes[i]
 
         goal = mov_msgs.MoveBaseGoal()
-        goal.target_pose.pose = vertexes[i]
+        goal.target_pose.pose = location
         goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
 
