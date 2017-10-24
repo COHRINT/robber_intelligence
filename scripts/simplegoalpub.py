@@ -30,13 +30,13 @@ def simpleGoalPub():
         goal.header.frame_id = 'map'
         goal.header.stamp = rospy.Time.now()
         goal.pose = vertexes[i]
-        # Start the robot toward the next location
+
         navGoalPub.publish(goal)
 
-        rospy.sleep(150)
+        rospy.sleep(20)
 
 
-    # rostopic pub roy/move_base_simple/goal geometry_msgs/PoseStamped '{header: {stamp: now, frame_id: "map"}, pose: {position: {x: 1.0, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}'
+    # rostopic pub /roy/move_base_simple/goal geometry_msgs/PoseStamped '{header: {stamp: now, frame_id: "map"}, pose: {position: {x: 1.0, y: 0.0, z: 0.0}, orientation: {w: 1.0}}}'
 
 
 if __name__ == "__main__":
