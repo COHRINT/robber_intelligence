@@ -10,6 +10,8 @@ import actionlib
 import actionlib_msgs.msg as act_msgs # import *
 import geometry_msgs.msg as geo_msgs # geo_msgs.Pose, geo_msgs.PoseWithCovarianceStamped, geo_msgs.Point, geo_msgs.Quaternion, geo_msgs.Twist, geo_msgs.Vector3
 import move_base_msgs.msg as mov_msgs # import mov_msgs.MoveBaseAction, mov_msgs.MoveBaseGoal
+import os.path
+import yaml
 
 class mapNav():
     def __init__(self):
@@ -18,6 +20,24 @@ class mapNav():
         self.mover_base = actionlib.SimpleActionClient("deckard/move_base", mov_msgs.MoveBaseAction)
         #self.mover_base.wait_for_server(rospy.Duration(5))
         rospy.on_shutdown(self.turnOff)
+
+        mapInfo = 'map2.yaml'
+        with open(mapInfo, 'r') as stream:
+            try:
+                yamled = yaml.load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
+        # deletes info
+        del yamled['info']
+        # makes list of location names
+        # gets locations of each object, attaches them to name
+        objDict = yamled.values()
+        objLocations = {}
+        for item in objDict:
+            itemName = item['name']
+            itemLoc = geo_msgs.Pose(geo_msgs.Point(item['centroid_x'], item['centroid_y'], 0), geo_msgs.Quaternion(0,0,0,1))
+            objLocations[itemName] = itemLoc
+        objList = objLocations.keys()
 
         self.roomDict = {"study": geo_msgs.Pose(geo_msgs.Point(-1,1,0), geo_msgs.Quaternion(0,0,0,1)), "hallway": geo_msgs.Pose(geo_msgs.Point(1,-1,0), geo_msgs.Quaternion(0,0,0,1)),
             "library": geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0, 0,0,1)), "billiard room":geo_msgs.Pose(geo_msgs.Point(-1,-1,0), geo_msgs.Quaternion(0,0,0,1))}
@@ -29,18 +49,13 @@ class mapNav():
             'PREEMPTING', 'RECALLING', 'RECALLED',
             'LOST']
 
-        planner = ""
-        while (planner.lower()is not "human" or planner.lower() is not "auto"):
-           planner = raw_input("Would you like to move based on human input or automatically?: Please type \"human\" or \"auto\": ")
-           print(planner.lower())
+        # planner = ""
+        # while (planner.lower()is not "human" or planner.lower() is not "auto"):
+        #    planner = raw_input("Would you like to move based on human input or automatically?: Please type \"human\" or \"auto\": ")
+        #    print(planner.lower())
         
         # Run
-        self.goalPub(planner.lower())
-        
-        # Cancel all goals and stop movement
-        self.turnOff()
-
-    def goalPub(self, planner):
+        #self.goalPub(planner.lower())
         # 2d Nav Goal
         # ask user for a goal if needed, otherwise automatically set by endpoint
         num_locations = len(self.roomDict)
@@ -50,16 +65,16 @@ class mapNav():
 
         while not rospy.is_shutdown():
             # Get next location
-            if (planner=="auto"):
-                if i == num_locations:
-                    i = 0
-                next_location = self.roomVals[i]
-                i += 1
-            elif (planner=="human"):
-                userInput = raw_input("Where would you like to go?: ")
-                while userInput not in self.roomKeys:
-                    userInput = raw_input("Please enter in a valid location: ")
-                next_location = self.roomDict[userInput]
+           # if (planner=="auto"):
+            if i == num_locations:
+                i = 0
+            next_location = self.roomVals[i]
+            i += 1
+            # elif (planner=="human"):
+            #     userInput = raw_input("Where would you like to go?: ")
+            #     while userInput not in self.roomKeys:
+            #         userInput = raw_input("Please enter in a valid location: ")
+            #     next_location = self.roomDict[userInput]
 
             # Send the goal to the robot
             goal = mov_msgs.MoveBaseGoal()
@@ -80,6 +95,12 @@ class mapNav():
               rospy.loginfo("Goal failed: " + self.status[state])
               break
             rospy.sleep(1)
+        
+        # Cancel all goals and stop movement
+        self.turnOff()
+
+    #def goalPub(self, planner):
+        
 
 
     def turnOff(self):
@@ -87,6 +108,7 @@ class mapNav():
         self.mover_base.cancel_goal()
         rospy.loginfo("bruh")
         self.velPub.publish(geo_msgs.Twist())
+        return
 
 if __name__ == '__main__':
     try:

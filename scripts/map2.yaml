@@ -1,0 +1,369 @@
+# -general map info is included in the info array
+# -all other associative arrays are objects on the map
+# -length is along the direction that the object faces before orientation
+# -orientation [radians]
+# -all other measurements are [m]
+# NOTE: the color 'sage' does not interface with QT...
+# -author = 'LT'
+
+info:
+  name: Map2
+  bounds:
+    max_x: 4.0
+    max_y: 3.6
+    min_x: -9.6
+    min_y: -3.6
+  origin:
+    x_coord: 0.0
+    y_coord: 0.0
+  rooms:
+    study:
+      min_x: -7.0
+      min_y: -3.33
+      max_x: -2.0
+      max_y: -1.0
+      objects:
+        ['desk','filing cabinet']
+    hallway:
+      min_x: -9.5
+      min_y: -1.0
+      max_x: 4.0
+      max_y: 1.4
+      objects:
+        ['fern']
+    library:
+      min_x: -2.0
+      min_y: -3.33
+      max_x: 4.0
+      max_y: -1.0
+      objects:
+        ['bookcase','chair']
+    billiard room:
+      min_x: 0.0
+      min_y: 1.4
+      max_x: 4.0
+      max_y: 3.68
+      objects:
+        ['checkers table','cassini poster']
+    dining room:
+      min_x: -9.5
+      min_y: -3.33
+      max_x: -7.0
+      max_y: -1.0
+      objects:
+        ['dining table']
+    kitchen:
+      min_x: -9.5
+      min_y: 1.4
+      max_x: 0.0
+      max_y: 3.68
+      objects:
+        ['fridge','mars poster']
+
+bookcase:
+  name: bookcase
+  color: sandybrown
+  centroid_x: 0.0
+  centroid_y: -1.1662
+  length: 0.18
+  width: 0.38
+  # degrees obj's length to map's pos-x axis
+  orientation: 270
+  shape: rectangle
+
+desk:
+  name: desk
+  color: sandybrown
+  centroid_x: -5.5
+  centroid_y: -2.0
+  length: 0.61
+  width: 0.99
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+chair:
+  name: chair
+  color: brown
+  centroid_x: 2.975
+  centroid_y: -2.435
+  length: 0.46
+  width: 0.41
+  # degrees obj's length to map's pos-x axis
+  orientation: 90.0
+  shape: rectangle
+
+filing cabinet:
+  name: filing cabinet
+  color: black
+  centroid_x: -3.8638
+  centroid_y: -1.3262
+  length: 0.5
+  width: 0.37
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+dining table:
+  name: dining table
+  color: brown
+  centroid_x: -8.5
+  centroid_y: -2.3
+  length: 1.17
+  width: 0.69
+  # degrees obj's length to map's pos-x axis
+  orientation: 90.0
+  shape: rectangle
+
+mars poster:
+  name: mars poster
+  color: bisque
+  centroid_x: -4.38
+  centroid_y: 3.475
+  length: 0.05
+  width: 0.84
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+cassini poster:
+  name: cassini poster
+  color: black
+  centroid_x: 1.38
+  centroid_y: 3.475
+  length: 0.05
+  width: 0.56
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+fridge:
+  name: fridge
+  color: black
+  centroid_x: -9.1
+  centroid_y: 3.07
+  length: 0.46
+  width: 0.46
+  # degrees obj's length to map's pos-x axis
+  orientation: 315.0
+  shape: rectangle
+
+checkers table:
+  name: checkers table
+  color: sandybrown
+  centroid_x: 2.04
+  centroid_y: 2.16
+  length: 0.5
+  width: 0.5
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+fern:
+  name: fern
+  color: green
+  centroid_x: -2.475
+  centroid_y: 1.06
+  length: 0.5
+  width: 0.5
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: oval
+
+wall_1:
+  name: wall_1
+  color: sienna
+  centroid_x: -7.0
+  centroid_y: -1.4988
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+wall_2:
+  name: wall_2
+  color: sienna
+  centroid_x: -7.0
+  centroid_y: -2.6488
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+wall_3:
+  name: wall_3
+  color: sienna
+  centroid_x: -6.3488
+  centroid_y: -1.0
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_4:
+  name: wall_4
+  color: sienna
+  centroid_x: -5.1988
+  centroid_y: -1.0
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_5:
+  name: wall_5
+  color: sienna
+  centroid_x: -4.0488
+  centroid_y: -1.0
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_6:
+  name: wall_6
+  color: sienna
+  centroid_x: -2.0
+  centroid_y: -1.4988
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 270.0
+  shape: rectangle
+
+wall_7:
+  name: wall_7
+  color: sienna
+  centroid_x: -1.3488
+  centroid_y: -1.0
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_8:
+  name: wall_8
+  color: sienna
+  centroid_x: -0.1988
+  centroid_y: -1.0
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_9:
+  name: wall_9
+  color: sienna
+  centroid_x: 0.9512
+  centroid_y: -1.0
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0 # changed
+  shape: rectangle
+
+wall_10:
+  name: wall_10
+  color: sienna
+  centroid_x: -6.7988
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_11:
+  name: wall_11
+  color: sienna
+  centroid_x: -5.6488
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_12:
+  name: wall_12
+  color: sienna
+  centroid_x: -4.4988
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_13:
+  name: wall_13
+  color: sienna
+  centroid_x: -3.3488
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_14:
+  name: wall_14
+  color: sienna
+  centroid_x: -2.1988
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_15:
+  name: wall_15
+  color: sienna
+  centroid_x: 0.6512
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_16:
+  name: wall_16
+  color: sienna
+  centroid_x: 1.8012
+  centroid_y: 1.4
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 0.0
+  shape: rectangle
+
+wall_17:
+  name: wall_17
+  color: sienna
+  centroid_x: 0.0
+  centroid_y: 1.8988
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 90.0
+  shape: rectangle
+
+wall_18:
+  name: wall_18
+  color: sienna
+  centroid_x: 0.0
+  centroid_y: 2.8964
+  length: 1.15
+  width: 0.1524
+  # degrees obj's length to map's pos-x axis
+  orientation: 90.0
+  shape: rectangle
