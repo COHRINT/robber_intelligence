@@ -60,7 +60,7 @@ info:
       objects:
         ['fridge','mars poster']
 
-bookcase:
+bookcase: # good
   name: bookcase
   color: sandybrown
   centroid_x: 0.0
@@ -71,7 +71,7 @@ bookcase:
   orientation: 270
   shape: rectangle
 
-desk:
+desk: # good
   name: desk
   color: sandybrown
   centroid_x: -5.5
@@ -82,7 +82,7 @@ desk:
   orientation: 0.0
   shape: rectangle
 
-chair:
+chair: # good
   name: chair
   color: brown
   centroid_x: 2.975
@@ -104,7 +104,7 @@ filing cabinet:
   orientation: 270.0
   shape: rectangle
 
-dining table:
+dining table: # good
   name: dining table
   color: brown
   centroid_x: -8.5
@@ -112,10 +112,10 @@ dining table:
   length: 1.17
   width: 0.69
   # degrees obj's length to map's pos-x axis
-  orientation: 90.0
+  orientation: 270
   shape: rectangle
 
-mars poster:
+mars poster: # good
   name: mars poster
   color: bisque
   centroid_x: -4.38
@@ -126,7 +126,7 @@ mars poster:
   orientation: 270.0
   shape: rectangle
 
-cassini poster:
+cassini poster: # good
   name: cassini poster
   color: black
   centroid_x: 1.38
@@ -140,12 +140,12 @@ cassini poster:
 fridge:
   name: fridge
   color: black
-  centroid_x: -9.1
-  centroid_y: 3.07
+  centroid_x: -8.5 # -9.1
+  centroid_y: 2.6 #3.07
   length: 0.46
   width: 0.46
   # degrees obj's length to map's pos-x axis
-  orientation: 315.0
+  orientation: 180.0 # 315
   shape: rectangle
 
 checkers table:
@@ -156,18 +156,18 @@ checkers table:
   length: 0.5
   width: 0.5
   # degrees obj's length to map's pos-x axis
-  orientation: 270.0
+  orientation: 90.0 #270
   shape: rectangle
 
 fern:
   name: fern
   color: green
   centroid_x: -2.475
-  centroid_y: 1.06
+  centroid_y: .7 # 1.06
   length: 0.5
   width: 0.5
   # degrees obj's length to map's pos-x axis
-  orientation: 270.0
+  orientation: 270
   shape: oval
 
 wall_1:
