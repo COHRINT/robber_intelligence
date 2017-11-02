@@ -1,5 +1,5 @@
 GlobalPlanner:
-  default_tolerance: 1.0
+  default_tolerance: 2.0
 
 DWAPlannerROS:
   min_rot_vel: .1
