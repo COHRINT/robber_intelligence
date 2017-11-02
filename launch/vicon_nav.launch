@@ -24,7 +24,7 @@
   </include>  -->
 
   <!-- Map server -->
-  <arg name="map_file" default="/home/odroid/robber_intelligence/models/empty_map.yaml"/>
+  <arg name="map_file" default="/home/odroid/robber_intelligence/models/map2_occupancy.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" required="true"/> 
 
 

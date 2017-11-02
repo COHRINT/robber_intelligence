@@ -65,8 +65,8 @@ bookcase:
   color: sandybrown
   centroid_x: 0.0
   centroid_y: -1.1662
-  length: 0.18
-  width: 0.38
+  length: 0.18 # y-axis
+  width: 0.38 # x-axis
   # degrees obj's length to map's pos-x axis
   orientation: 270
   shape: rectangle
