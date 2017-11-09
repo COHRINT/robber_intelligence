@@ -16,7 +16,7 @@ def goalPub():
     navGoalPub = rospy.Publisher('roy/move_base/goal', move_base_msgs.msg.MoveBaseGoal, queue_size=10) # could be /move_base/current_goal
     rate = rospy.Rate(10) # 10hz
     # rospy.on_shutdown(shutDown())
-
+#vrdi
     goal = MoveBaseGoal()
     goal.target_pose.header.seq = 0
     goal.target_pose.header.stamp = 0
