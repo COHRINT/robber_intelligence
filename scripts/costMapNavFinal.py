@@ -38,6 +38,7 @@ def mapPub():
     objLocations = {}
     for item in objDict:
         itemName = item['name']
+        nameValue = item['value']
         if itemName[0:4] != "wall":
             x_loc = item['centroid_x'] + (item['width'] + .3) * math.cos(math.radians(item['orientation']))
             y_loc = item['centroid_y'] + (item['length'] + .3) * math.sin(math.radians(item['orientation']))
