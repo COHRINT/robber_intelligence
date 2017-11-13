@@ -36,17 +36,19 @@ def mapPub():
     # gets locations of each object, attaches them to name
     objDict = yamled.values()
     objLocations = {}
+    objNames = {}
     for item in objDict:
         itemName = item['name']
-        nameValue = item['value']
         if itemName[0:4] != "wall":
             x_loc = item['centroid_x'] + (item['width'] + .3) * math.cos(math.radians(item['orientation']))
             y_loc = item['centroid_y'] + (item['length'] + .3) * math.sin(math.radians(item['orientation']))
             quat = tf.transformations.quaternion_from_euler(0, 0, item['orientation']-180)
             itemLoc = geo_msgs.Pose(geo_msgs.Point(x_loc, y_loc, 0), geo_msgs.Quaternion(quat[0],quat[1],quat[2],quat[3]))
             objLocations[itemName] = itemLoc
+            objNames[itemName] = item['value']
     vertexes = objLocations.values()
     vertexKeys = objLocations.keys()
+    vertexvalues = objNames.values()
 
     status = ['PENDING', 'ACTIVE', 'PREEMPTED',
         'SUCCEEDED', 'ABORTED', 'REJECTED',
@@ -60,7 +62,7 @@ def mapPub():
     n_locations = len(vertexes)
     i = 0
 
-    rospy.loginfo("Starting Square Movement VROOM VROOM")
+    rospy.loginfo(vertexvalues)
 
     # Go through the series of locations indefinitely
     while not rospy.is_shutdown():
