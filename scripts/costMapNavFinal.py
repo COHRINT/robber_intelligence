@@ -6,6 +6,7 @@ import math
 import tf
 import rospy
 import geometry_msgs
+import operator
 import nav_msgs
 import move_base_msgs
 import actionlib
@@ -45,7 +46,8 @@ def mapPub():
             quat = tf.transformations.quaternion_from_euler(0, 0, item['orientation']-180)
             itemLoc = geo_msgs.Pose(geo_msgs.Point(x_loc, y_loc, 0), geo_msgs.Quaternion(quat[0],quat[1],quat[2],quat[3]))
             objLocations[itemName] = itemLoc
-            objNames[itemName] = item['value']
+            objNames[itemName] = ([item['value']])
+
     vertexes = objLocations.values()
     vertexKeys = objLocations.keys()
     vertexvalues = objNames.values()
@@ -60,18 +62,23 @@ def mapPub():
 
     # Keeping track
     n_locations = len(vertexes)
-    i = 0
+    
 
-    rospy.loginfo(vertexvalues)
+    rospy.loginfo("vroom")
 
     # Go through the series of locations indefinitely
     while not rospy.is_shutdown():
-        # Get random waypoint
-        i = random.randint(0, n_locations-1)
-        location = vertexes[i]
-        rospy.loginfo("Going to " + vertexKeys[i])
+    	for i in xrange(0, n_locations):
+    		maximum = max(objNames.iteritems(), key=operator.itemgetter(1))[0]
 
-        # Set up goal
+        	if vertexKeys[i] == maximum:
+        		location = vertexes[i]
+        		rospy.loginfo("Going to " + maximum)
+        		break
+        	else:
+        		location = vertexes[5]
+        		
+        # Set up goa5
         goal = mov_msgs.MoveBaseGoal()
         goal.target_pose.pose = location
         goal.target_pose.header.frame_id = 'map'
@@ -90,6 +97,8 @@ def mapPub():
         if state == 3: #SUCCESSFUL
             rospy.loginfo(i)
             rospy.loginfo("Just Reached " + vertexKeys[i])
+            del objLocations[vertexKeys[i]]
+            del objNames[maximum]
         else:
           rospy.loginfo("Goal failed")
           rospy.loginfo(status[state])
