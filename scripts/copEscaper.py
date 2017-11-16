@@ -21,7 +21,6 @@ class copEscaper():
         self.robberName = "roy"
         self.plan_tolerance = 0.1
 
-
         # 2d Nav Goal
         # ask user for a goal if needed, otherwise automatically set by endpoint
         rospy.init_node("copEscaper")
