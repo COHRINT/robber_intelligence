@@ -17,7 +17,7 @@ chair:
 
 filing cabinet:
   name: filing cabinet
-  value: 0.0
+  value: 100.0
 
 dining table:
   name: dining table
@@ -36,7 +36,7 @@ cassini poster:
 
 fridge:
   name: fridge
-  value: 5.00
+  value: 10.0
 
 
 checkers table:
