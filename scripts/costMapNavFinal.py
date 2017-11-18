@@ -35,8 +35,7 @@ def mapPub():
     del yamled['info']
     # makes list of location names
     # gets locations of each object, attaches them to name
-
-    objDict = yamled.values() 
+    objDict = yamled.values()
     objLocations = {}
     objNames = {}
     for item in objDict:
@@ -47,23 +46,10 @@ def mapPub():
             quat = tf.transformations.quaternion_from_euler(0, 0, item['orientation']-180)
             itemLoc = geo_msgs.Pose(geo_msgs.Point(x_loc, y_loc, 0), geo_msgs.Quaternion(quat[0],quat[1],quat[2],quat[3]))
             objLocations[itemName] = itemLoc
-            
+            objNames[itemName] = ([item['value']])
 
     vertexes = objLocations.values()
     vertexKeys = objLocations.keys()
-
-    objectValues = 'object_values.yaml'
-    with open(objectValues, 'r') as stream:
-        try:
-            yamled1 = yaml.load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-
-    objDict1 = yamled1.values() 
-    for item in objDict1:
-    	    itemName = item['name']
-            objNames[itemName] = ([item['value']])
-
     vertexvalues = objNames.values()
 
     status = ['PENDING', 'ACTIVE', 'PREEMPTED',
@@ -78,7 +64,7 @@ def mapPub():
     n_locations = len(vertexes)
     
 
-    rospy.loginfo("vroom my dude")
+    rospy.loginfo("vroom")
 
     # Go through the series of locations indefinitely
     while not rospy.is_shutdown():
