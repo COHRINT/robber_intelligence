@@ -57,7 +57,7 @@ def mapPub():
         'PREEMPTING', 'RECALLING', 'RECALLED',
         'LOST']
 
-    mover_base = actionlib.SimpleActionClient("roy/move_base", mov_msgs.MoveBaseAction)
+    mover_base = actionlib.SimpleActionClient("deckard/move_base", mov_msgs.MoveBaseAction)
     mover_base.wait_for_server(rospy.Duration(5))
 
     # Keeping track
