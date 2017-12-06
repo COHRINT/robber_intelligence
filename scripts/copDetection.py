@@ -75,6 +75,31 @@ def copDetection():
     # rospy.loginfo("Just Reached " + vertexKeys[i])
 
 
+    # Floyd warshall stuff
+    mapGrid = np.load('mapGrid.npy')
+    robLocY = robLoc.pose.position.y
+    robLocX = robLoc.pose.position.x
+    floydWarshallCosts = np.load('floydWarshallCosts.npy')
+    evaluateFloydCost(copLoc, robLoc, floydWarshallCosts, mapGrid)
+
+def convertPoseToGridLocation(y, x, grid):
+    mapSizeY, mapSizeX = 0.72, 1.36
+    mapGridDimY, mapGridDimX = grid.shape
+    gridLocY = int(y / mapSizeY)
+    gridLocX = int(x / mapSizeX)
+    return gridLocY, gridLocX
+
+
+def evaluateFloydCost(copLoc, pose, floydWarshallCosts, mapGrid):
+    copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y, copLoc.pose.position.x, mapGrid)
+    poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.y, pose.pose.position.x, mapGrid)
+    print(copGridLocY)
+    print(copGridLocX)
+    print(poseGridLocY)
+    print(poseGridLocX)
+    print(floydWarshallCosts.shape)
+    print(floydWarshallCosts[copGridLocY][copGridLocX])
+    ## How to use floyd warshall algorithm??
 
 def getObjects(mapInfo):
     with open(mapInfo, 'r') as stream:
@@ -170,6 +195,8 @@ def angleSimilarity(vec1, vec2):
     unitVec2 = vec2 / np.linalg.norm(vec2)
     angle = np.arccos(np.clip(np.dot(unitVec1, unitVec2), -1.0, 1.0))
     return angle
+
+
 
 def getCopLocation(data):
     copLoc = data
