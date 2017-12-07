@@ -19,29 +19,42 @@ import nav_msgs.srv as nav_srv
 import nav_msgs.msg as nav_msgs
 
 
-class copDetection():
+class robotLocation():
 
     def __init__(self):
+        rospy.init_node('robotLoc')
+        rate = rospy.Rate(10)
+
         copName = "deckard"
         robberName = "roy"
+        # self.copLoc = geo_msgs.PoseStamped(std_msgs.Header(), geo_msgs.Pose(geo_msgs.Point(1,1,0), geo_msgs.Quaternion(0,0,1,0)))
+        self.robLoc = geo_msgs.TransformStamped()
 
-        rospy.Subscriber("/" + copName + "/", geo_msgs.Pose, self.getCopLocation)
-        rospy.Subscriber("/" + robberName + "/", geo_msgs.Pose, self.getRobberLocation)
+        rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
+        rospy.Subscriber("/" + robberName + "/base_footprint", geo_msgs.TransformStamped, self.getRobberLocation)
 
-        print(self.copLoc)
-        print(self.robLoc)
+        while not rospy.is_shutdown():
+            # print(self.copLoc)
+            print(self.robLoc)
 
 
-    def getCopLocation(self, poseMsg):
+    def getCopLocation(self, tfMsg):
+        poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
+            geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
+            geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
         self.copLoc = poseMsg
 
-    def getRobberLocation(self, poseMsg):
+
+    def getRobberLocation(self, tfMsg):
+        poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
+            geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
+            geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
         self.robLoc = poseMsg
 
 
 if __name__ == '__main__':
     try:
-        copDetection()
+        robotLocation()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
