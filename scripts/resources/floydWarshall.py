@@ -33,7 +33,7 @@ def floyds(grid):
 
 	#initialize distance grid to infinity
 	dist = np.ones(shape = (sizeX,sizeY,sizeX,sizeY))*np.Inf;
-	nextPlace = np.ones(shape = (sizeX,sizeY,sizeX,sizeY))*np.Inf;
+	nextPlace = np.empty(shape = (sizeX,sizeY,sizeX,sizeY), dtype=object);
 
 	#enforce that cells are zero distance from themselves
 	for i in range(0,sizeX):
@@ -74,13 +74,13 @@ def floyds(grid):
 	return dist, nextPlace
 
 def path(ux, uy, vx, vy, nextPlace):
-	if nextPlace is None:
-		return []
-	path = [(ux, uy)]
-	while u != v:
-		u = nextPlace[ux, uy, vx, vy]
-		path.append(u)
-	return path
+    if nextPlace[ux, uy, vx, vy] == None:
+        return []
+    path = [(ux, uy)]
+    while (ux != vx) and (uy != vy):
+        ux, uy = nextPlace[ux, uy, vx, vy]
+        path.append(u)
+    return path
 
 def displayMap(costs,pose=[0,3]):
 	#lets see what the cost looks like for a position

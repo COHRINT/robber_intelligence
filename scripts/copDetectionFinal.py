@@ -39,7 +39,7 @@ class copDetection():
 		'PREEMPTING', 'RECALLING', 'RECALLED',
 		'LOST']
 		mover_base = actionlib.SimpleActionClient(robberName + "/move_base", mov_msgs.MoveBaseAction)
-		mover_base.wait_for_server(rospy.Duration(5))
+		# mover_base.wait_for_server(rospy.Duration(5))
 
 
 		# Get list of objects and their locations
@@ -51,12 +51,15 @@ class copDetection():
 
 		# Load Floyd Warshall info
 		mapGrid = np.load('mapGrid.npy')
-		floydWarshallCosts = np.load('floydWarshallCosts.npy')
+		floydWarshallCosts = np.load('floydWarshallCosts20.npy')
+		floydWarshallNextPlace = np.load('floydWarshallNextPlace.npy')
+
+		print(makePath(2, 10, 10, 10, floydWarshallNextPlace))
 
 
 		while not rospy.is_shutdown():
 			# Choose destination
-			curCost, curDestination = floydChooseDestination(objLocations, self.copLoc, self.robLoc, floydWarshallCosts, mapGrid)
+			curCost, curDestination = floydChooseDestination(objLocations, self.copLoc, self.robLoc, floydWarshallCosts, mapGrid, floydWarshallNextPlace)
 			rospy.loginfo("Stealing goods at " + curDestination + " with danger level of " + str(curCost))
 
 			# Travel to destination
@@ -72,10 +75,11 @@ class copDetection():
 			state = mover_base.get_state()
 			pathFailure = False
 			while (state==1 or state==0) and (pathFailure==False): # ACTIVE
-				newCost = evaluateFloydCost(self.copLoc, objLocations[curDestination], floydWarshallCosts, mapGrid)
-				if newCost > curCost*2:
+				newCost = evaluateFloydCost(self.copLoc, self.robLoc, objLocations[curDestination], floydWarshallCosts, mapGrid, floydWarshallNextPlace)
+				print ("New Cost: " + str(newCost))
+				if newCost < curCost/2:
 					pathFailure = True
-				rospy.sleep(1)
+				rospy.sleep(3)
 				state = mover_base.get_state()
 			if pathFailure==True:
 				rospy.loginfo("Path is too dangerous, finding a new object to steal.")
@@ -102,25 +106,42 @@ class copDetection():
 		self.robLoc = poseMsg
 
 
-def floydChooseDestination(objLocations, copLoc, robLoc, floydWarshallCosts, mapGrid):
+def makePath(ux, uy, vx, vy, nextPlace):
+	if nextPlace[ux, uy, vx, vy] == None:
+	    return []
+	path = [(ux, uy)]
+	while (ux != vx) or (uy != vy):
+	    ux, uy = nextPlace[ux, uy, vx, vy]
+	    path.append((ux, uy))
+	return path
+
+
+def floydChooseDestination(objLocations, copLoc, robLoc, floydWarshallCosts, mapGrid, nextPlace):
 	maxDist = 0
 	maxDistLocation = ""
 	for objKey in objLocations.keys():
-		objCost = evaluateFloydCost(copLoc, objLocations[objKey], floydWarshallCosts, mapGrid)
+		objCost = evaluateFloydCost(copLoc, robLoc, objLocations[objKey], floydWarshallCosts, mapGrid, nextPlace)
 		if objCost > maxDist:
 			maxDist = objCost
 			maxDistLocation = objKey
 	return maxDist, maxDistLocation
 
-def evaluateFloydCost(copLoc, pose, floydWarshallCosts, mapGrid):
+def evaluateFloydCost(copLoc, robLoc, pose, floydWarshallCosts, mapGrid, nextPlace):
     copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y , copLoc.pose.position.x, mapGrid)
+    robGridLocY, robGridLocX = convertPoseToGridLocation(robLoc.pose.position.y, robLoc.pose.position.x, mapGrid)
     poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.y, pose.pose.position.x, mapGrid)
-    cost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
-    while cost == np.Inf:
-    	poseGridLocY+=1
-    	if poseGridLocY>39:
-    		poseGridLocY = 0
-    	cost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
+    path = makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
+
+    cost = 0
+    for point in path:
+		poseGridLocY, poseGridLocX = point
+		pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
+		while pointCost == np.Inf:
+			poseGridLocY+=1
+			if poseGridLocY>39:
+				poseGridLocY = 0
+			pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
+		cost += pointCost
     return cost
 
 def convertPoseToGridLocation(y, x, grid):
@@ -128,7 +149,8 @@ def convertPoseToGridLocation(y, x, grid):
     originX = -9.6
     y += -1*originY
     x += -1*originX
-    mapSizeY, mapSizeX = 0.18, 0.34
+    # mapSizeY, mapSizeX = 0.18, 0.34
+    mapSizeY, mapSizeX = 0.36, 0.68
     mapGridDimY, mapGridDimX = grid.shape
     gridLocY = int(y / mapSizeY)
     gridLocX = int(x / mapSizeX)

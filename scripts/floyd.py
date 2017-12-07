@@ -21,7 +21,7 @@ import cv2
 
 def floyd():
     # Get map information
-    gridScale = .025 # size of each grid rectangle compared to map size
+    gridScale = .05 # size of each grid rectangle compared to map size
     curfilePath = os.path.abspath(__file__)
     curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
     parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
@@ -32,9 +32,10 @@ def floyd():
     # Apply floyd warshall algorithm
     print(len(mapGrid))
     print(len(mapGrid[0]))
-    costs = floydWarshall.floyds(mapGrid)
+    costs, nextPlace = floydWarshall.floyds(mapGrid)
     np.save('mapGrid', mapGrid)
-    np.save('floydWarshallCosts', costs)
+    np.save('floydWarshallCosts20', costs)
+    np.save('floydWarshallNextPlace', nextPlace)
     plt.imshow(mapGrid, interpolation='nearest')
     plt.show()
     # floydWarshall.displayMap(costs, pose)
