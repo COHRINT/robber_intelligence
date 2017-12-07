@@ -7,6 +7,7 @@ import random
 import math
 import tf
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy.stats
 import rospy
 # import geometry_msgs
@@ -77,29 +78,31 @@ def copDetection():
 
     # Floyd warshall stuff
     mapGrid = np.load('mapGrid.npy')
-    robLocY = robLoc.pose.position.y
-    robLocX = robLoc.pose.position.x
     floydWarshallCosts = np.load('floydWarshallCosts.npy')
     evaluateFloydCost(copLoc, robLoc, floydWarshallCosts, mapGrid)
+    # plt.imshow(mapGrid, interpolation='nearest')
+    # plt.show()
+
+
+
+
+def evaluateFloydCost(copLoc, pose, floydWarshallCosts, mapGrid):
+    copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y , copLoc.pose.position.x, mapGrid)
+    poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.y, pose.pose.position.x, mapGrid)
+    return floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX])
+    # plt.imshow(floydWarshallCosts[copGridLocY][copGridLocX], interpolation='nearest')
+    # plt.show()
 
 def convertPoseToGridLocation(y, x, grid):
-    mapSizeY, mapSizeX = 0.72, 1.36
+    originY = -3.6
+    originX = -9.6
+    y += -1*originY
+    x += -1*originX
+    mapSizeY, mapSizeX = 0.18, 0.34
     mapGridDimY, mapGridDimX = grid.shape
     gridLocY = int(y / mapSizeY)
     gridLocX = int(x / mapSizeX)
     return gridLocY, gridLocX
-
-
-def evaluateFloydCost(copLoc, pose, floydWarshallCosts, mapGrid):
-    copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y, copLoc.pose.position.x, mapGrid)
-    poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.y, pose.pose.position.x, mapGrid)
-    print(copGridLocY)
-    print(copGridLocX)
-    print(poseGridLocY)
-    print(poseGridLocX)
-    print(floydWarshallCosts.shape)
-    print(floydWarshallCosts[copGridLocY][copGridLocX])
-    ## How to use floyd warshall algorithm??
 
 def getObjects(mapInfo):
     with open(mapInfo, 'r') as stream:
