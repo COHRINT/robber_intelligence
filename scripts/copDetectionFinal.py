@@ -21,7 +21,7 @@ class copDetection():
 
 	def __init__(self, copName, robberName):
 		# Setup node
-		rospy.init_node('robotLoc')
+		rospy.init_node('copEvader')
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
 		rospy.Subscriber("/" + robberName + "/base_footprint", geo_msgs.TransformStamped, self.getRobberLocation)
@@ -39,7 +39,7 @@ class copDetection():
 		'PREEMPTING', 'RECALLING', 'RECALLED',
 		'LOST']
 		mover_base = actionlib.SimpleActionClient(robberName + "/move_base", mov_msgs.MoveBaseAction)
-		# mover_base.wait_for_server(rospy.Duration(5))
+		mover_base.wait_for_server(rospy.Duration(5))
 
 
 		# Get list of objects and their locations
@@ -64,11 +64,13 @@ class copDetection():
 
 			# Travel to destination
 			goal = mov_msgs.MoveBaseGoal()
-			goal.target_pose.pose = objLocations[curDestination]
+			goal.target_pose.pose = objLocations[curDestination].pose
 			goal.target_pose.header.frame_id = 'map'
 			goal.target_pose.header.stamp = rospy.Time.now()
 			rospy.loginfo(goal)
 			mover_base.send_goal(goal)
+
+			# mover_base.wait_for_result(rospy.Duration(120))
 
 
 			# While robber is travelling to destination, evaluate the path it is following every 1 second
@@ -77,8 +79,16 @@ class copDetection():
 			while (state==1 or state==0) and (pathFailure==False): # ACTIVE
 				newCost = evaluateFloydCost(self.copLoc, self.robLoc, objLocations[curDestination], floydWarshallCosts, mapGrid, floydWarshallNextPlace)
 				print ("New Cost: " + str(newCost))
-				if newCost < curCost/2:
+				if newCost < curCost*0.75:
 					pathFailure = True
+				# print(self.copLoc)
+				# print(self.robLoc)
+				# Display Costmap
+				copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y , copLoc.pose.position.x, mapGrid)
+				plt.imshow(floydWarshallCosts[copGridLocY][copGridLocX]);
+				plt.ion()
+				plt.show();
+				plt.pause(.0001)
 				rospy.sleep(3)
 				state = mover_base.get_state()
 			if pathFailure==True:
@@ -87,7 +97,7 @@ class copDetection():
 			elif state!=3:
 				rospy.loginfo("Robber failed to reach object with error code " + str(state) + ": " + status[state] + ". Finding something else to steal.")
 			else:
-				rospy.loginfo("MWUAHAHAHAHAHA You've successfully stolen valuable goods from the " + objKey)
+				rospy.loginfo("MWUAHAHAHAHAHA You've successfully stolen valuable goods from the " + curDestination)
 
 
 
@@ -103,6 +113,7 @@ class copDetection():
 		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
 			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
+		# print("Robber Location Updated")
 		self.robLoc = poseMsg
 
 
@@ -116,11 +127,13 @@ def makePath(ux, uy, vx, vy, nextPlace):
 	return path
 
 
+
 def floydChooseDestination(objLocations, copLoc, robLoc, floydWarshallCosts, mapGrid, nextPlace):
 	maxDist = 0
 	maxDistLocation = ""
 	for objKey in objLocations.keys():
 		objCost = evaluateFloydCost(copLoc, robLoc, objLocations[objKey], floydWarshallCosts, mapGrid, nextPlace)
+		print(objKey + ": " + str(objCost))
 		if objCost > maxDist:
 			maxDist = objCost
 			maxDistLocation = objKey
@@ -129,9 +142,9 @@ def floydChooseDestination(objLocations, copLoc, robLoc, floydWarshallCosts, map
 def evaluateFloydCost(copLoc, robLoc, pose, floydWarshallCosts, mapGrid, nextPlace):
     copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y , copLoc.pose.position.x, mapGrid)
     robGridLocY, robGridLocX = convertPoseToGridLocation(robLoc.pose.position.y, robLoc.pose.position.x, mapGrid)
+    # print(str(copGridLocX) + " " + str(copGridLocY))
     poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.y, pose.pose.position.x, mapGrid)
     path = makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
-
     cost = 0
     for point in path:
 		poseGridLocY, poseGridLocX = point
@@ -181,8 +194,8 @@ def getObjects(mapInfo):
 
 
 def main():
-	copDetection(copName="deckard", robberName="roy")
-    # rospy.spin()
+	copDetection(copName="zhora", robberName="deckard")
+	rospy.spin()
 
 if __name__ == '__main__':
     try:
