@@ -5,7 +5,7 @@
 
 
   <group ns="$(arg robot_name)">
-  <arg name="custom_param_file" default="/home/odroid/robber_intelligence/param/robber_params.yaml"/>
+  <arg name="custom_param_file" default="/home/odroid/cohrint_turtlebot/robber_intelligence/param/robber_params.yaml"/>
   <include file="$(find turtlebot_bringup)/launch/minimal.launch">
     <arg name="robot_name" value="$(arg robot_name)" />
   </include>
@@ -24,7 +24,7 @@
   </include>  -->
 
   <!-- Map server -->
-  <arg name="map_file" default="/home/odroid/robber_intelligence/models/map2_occupancy.yaml"/>
+  <arg name="map_file" default="/home/odroid/cohrint_turtlebot/robber_intelligence/models/map2_occupancy.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" required="true"/> 
 
 

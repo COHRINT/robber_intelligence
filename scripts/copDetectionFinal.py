@@ -22,6 +22,7 @@ class copDetection():
 	def __init__(self, copName, robberName):
 		# Setup node
 		rospy.init_node('copEvader')
+
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
 		rospy.Subscriber("/" + robberName + "/base_footprint", geo_msgs.TransformStamped, self.getRobberLocation)
@@ -30,144 +31,157 @@ class copDetection():
 		self.robLoc = geo_msgs.PoseStamped()
 
 		# Setup nav stack
-		# goal = mov_msgs.MoveBaseGoal()
-		# goal.target_pose.header.seq = 0
-		# goal.target_pose.header.stamp = 0
-		# goal.target_pose.header.frame_id = ""
+		mover_base = actionlib.SimpleActionClient(robberName + "/move_base", mov_msgs.MoveBaseAction)
+		mover_base.wait_for_server(rospy.Duration(5))
 		status = ['PENDING', 'ACTIVE', 'PREEMPTED',
 		'SUCCEEDED', 'ABORTED', 'REJECTED',
 		'PREEMPTING', 'RECALLING', 'RECALLED',
 		'LOST']
-		mover_base = actionlib.SimpleActionClient(robberName + "/move_base", mov_msgs.MoveBaseAction)
-		mover_base.wait_for_server(rospy.Duration(5))
-
 
 		# Get list of objects and their locations
 		mapInfo = 'map2.yaml'
-		objLocations = getObjects(mapInfo)
-		vertexes = objLocations.values()
-		vertexKeys = objLocations.keys()
-
+		self.objLocations = getObjects(mapInfo)
+		vertexes = self.objLocations.values()
+		vertexKeys = self.objLocations.keys()
 
 		# Load Floyd Warshall info
-		mapGrid = np.load('mapGrid.npy')
-		floydWarshallCosts = np.load('floydWarshallCosts20.npy')
-		floydWarshallNextPlace = np.load('floydWarshallNextPlace.npy')
+		self.mapGrid = np.load('mapGrid.npy')
+		self.floydWarshallCosts = np.load('floydWarshallCosts20.npy')
+		self.floydWarshallNextPlace = np.load('floydWarshallNextPlace.npy')
 
-		print(makePath(2, 10, 10, 10, floydWarshallNextPlace))
+		# Evasion Parameters
+		reevaluationTime = 3 # Time to wait before reevaluating the path robber is following
+		dangerWeight = 0.75 # Amount of danger before robber should choose a new path
 
+		# Map Parameters
+		self.originY, self.originX = -3.6, -9.6 # ????
+	    # mapSizeY, mapSizeX = 0.18, 0.34
+		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
 
+		# Begin Evasion
 		while not rospy.is_shutdown():
-			# Choose destination
-			curCost, curDestination = floydChooseDestination(objLocations, self.copLoc, self.robLoc, floydWarshallCosts, mapGrid, floydWarshallNextPlace)
+			# Choose destination of least cost
+			curCost, curDestination = floydChooseDestination()
 			rospy.loginfo("Stealing goods at " + curDestination + " with danger level of " + str(curCost))
 
 			# Travel to destination
 			goal = mov_msgs.MoveBaseGoal()
-			goal.target_pose.pose = objLocations[curDestination].pose
+			goal.target_pose.pose = self.objLocations[curDestination].pose
 			goal.target_pose.header.frame_id = 'map'
 			goal.target_pose.header.stamp = rospy.Time.now()
 			rospy.loginfo(goal)
 			mover_base.send_goal(goal)
 
-			# mover_base.wait_for_result(rospy.Duration(120))
+
+			# Would this make it so you wait for 2 seconds every time?
+			# mover_base.wait_for_result(rospy.Duration(2))
 
 
-			# While robber is travelling to destination, evaluate the path it is following every 1 second
+			# While robber is travelling to destination, evaluate the path it is following every few seconds
 			state = mover_base.get_state()
 			pathFailure = False
-			while (state==1 or state==0) and (pathFailure==False): # ACTIVE
-				newCost = evaluateFloydCost(self.copLoc, self.robLoc, objLocations[curDestination], floydWarshallCosts, mapGrid, floydWarshallNextPlace)
+			while (status[state]=='PENDING' or status[state]=='ACTIVE') and (pathFailure==False):
+				# Evaluate cost of path
+				newCost = evaluateFloydCost(self.objLocations[curDestination])
 				print ("New Cost: " + str(newCost))
-				if newCost < curCost*0.75:
+
+				# Check if path is too dangerous
+				if newCost < curCost*dangerWeight:
 					pathFailure = True
-				# print(self.copLoc)
-				# print(self.robLoc)
+
 				# Display Costmap
-				copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y , copLoc.pose.position.x, mapGrid)
-				plt.imshow(floydWarshallCosts[copGridLocY][copGridLocX]);
+				copGridLocY, copGridLocX = convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
+				plt.imshow(self.floydWarshallCosts[copGridLocY][copGridLocX]);
 				plt.ion()
 				plt.show();
 				plt.pause(.0001)
-				rospy.sleep(3)
+
+				# Pause for few seconds until reevalutation of path
+				rospy.sleep(reevaluationTime)
 				state = mover_base.get_state()
-			if pathFailure==True:
+
+			# Check what robber has accomplished
+			if pathFailure == True: # Robber path is too dangerous, choose a new path
 				rospy.loginfo("Path is too dangerous, finding a new object to steal.")
 				mover_base.cancel_goal()
-			elif state!=3:
+			elif status[state] != 'SUCCEEDED': # Failure in getting to object
 				rospy.loginfo("Robber failed to reach object with error code " + str(state) + ": " + status[state] + ". Finding something else to steal.")
-			else:
+			else: # SUCCESSFUL ROBBERY
 				rospy.loginfo("MWUAHAHAHAHAHA You've successfully stolen valuable goods from the " + curDestination)
 
 
+	# Goes through entire list of objects and returns object with path that is least likely to be detected and its cost
+	def floydChooseDestination(self):
+		maxDist = 0
+		maxDistLocation = ""
+		for objKey in self.objLocations.keys():
+			objCost = evaluateFloydCost(objLocations[objKey])
+			print(objKey + ": " + str(objCost))
+			if objCost > maxDist:
+				maxDist = objCost
+				maxDistLocation = objKey
+		return maxDist, maxDistLocation
+
+
+	# ALSO need to comment this....
+	def evaluateFloydCost(self, objPose):
+	    copGridLocY, copGridLocX = convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
+	    robGridLocY, robGridLocX = convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
+	    poseGridLocY, poseGridLocX = convertPoseToGridLocation(objPose.pose.position.y, objPose.pose.position.x)
+	    path = makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX)
+	    cost = 0
+	    for point in path:
+			poseGridLocY, poseGridLocX = point
+			pointCost = self.floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
+			while pointCost == np.Inf:
+				poseGridLocY+=1
+				if poseGridLocY>39:
+					poseGridLocY = 0
+				pointCost = self.floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
+			cost += pointCost
+	    return cost
+
+	# I need to comment the fuck out of this, investigate floyd algorithm file
+	def convertPoseToGridLocation(self, y, x):
+	    y += -1*self.originY
+	    x += -1*self.originX
+	    # mapGridDimY, mapGridDimX = self.mapGrid.shape
+	    gridLocY = int(y / self.mapSizeY)
+	    gridLocX = int(x / self.mapSizeX)
+	    return gridLocY, gridLocX
 
 	def getCopLocation(self, tfMsg):
 		self.pastCopLoc = self.copLoc
-		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
-			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
+		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(),
+			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z),
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
 		self.copLoc = poseMsg
 
 
 	def getRobberLocation(self, tfMsg):
-		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
-			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
+		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(),
+			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z),
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
-		# print("Robber Location Updated")
 		self.robLoc = poseMsg
 
 
-def makePath(ux, uy, vx, vy, nextPlace):
-	if nextPlace[ux, uy, vx, vy] == None:
-	    return []
-	path = [(ux, uy)]
-	while (ux != vx) or (uy != vy):
-	    ux, uy = nextPlace[ux, uy, vx, vy]
-	    path.append((ux, uy))
-	return path
+	def makePath(self, ux, uy, vx, vy):
+		if self.floydWarshallNextPlace[ux, uy, vx, vy] == None:
+		    return []
+		path = [(ux, uy)]
+		while (ux != vx) or (uy != vy):
+		    ux, uy = self.floydWarshallNextPlace[ux, uy, vx, vy]
+		    path.append((ux, uy))
+		return path
 
 
+    # def shutDown(self):
+    #         rospy.loginfo("Stopping the robot...")
+    #         self.mover_base.cancel_goal()
+    #         rospy.sleep(2)
+    #         self.cmd_vel_pub.publish(Twist())
+    #         rospy.sleep(1)
 
-def floydChooseDestination(objLocations, copLoc, robLoc, floydWarshallCosts, mapGrid, nextPlace):
-	maxDist = 0
-	maxDistLocation = ""
-	for objKey in objLocations.keys():
-		objCost = evaluateFloydCost(copLoc, robLoc, objLocations[objKey], floydWarshallCosts, mapGrid, nextPlace)
-		print(objKey + ": " + str(objCost))
-		if objCost > maxDist:
-			maxDist = objCost
-			maxDistLocation = objKey
-	return maxDist, maxDistLocation
-
-def evaluateFloydCost(copLoc, robLoc, pose, floydWarshallCosts, mapGrid, nextPlace):
-    copGridLocY, copGridLocX = convertPoseToGridLocation(copLoc.pose.position.y , copLoc.pose.position.x, mapGrid)
-    robGridLocY, robGridLocX = convertPoseToGridLocation(robLoc.pose.position.y, robLoc.pose.position.x, mapGrid)
-    # print(str(copGridLocX) + " " + str(copGridLocY))
-    poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.y, pose.pose.position.x, mapGrid)
-    path = makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
-    cost = 0
-    for point in path:
-		poseGridLocY, poseGridLocX = point
-		pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
-		while pointCost == np.Inf:
-			poseGridLocY+=1
-			if poseGridLocY>39:
-				poseGridLocY = 0
-			pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
-		cost += pointCost
-    return cost
-
-def convertPoseToGridLocation(y, x, grid):
-    originY = -3.6
-    originX = -9.6
-    y += -1*originY
-    x += -1*originX
-    # mapSizeY, mapSizeX = 0.18, 0.34
-    mapSizeY, mapSizeX = 0.36, 0.68
-    mapGridDimY, mapGridDimX = grid.shape
-    gridLocY = int(y / mapSizeY)
-    gridLocX = int(x / mapSizeX)
-    return gridLocY, gridLocX
 
 def getObjects(mapInfo):
     with open(mapInfo, 'r') as stream:
