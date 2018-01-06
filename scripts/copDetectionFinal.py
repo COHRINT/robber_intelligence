@@ -8,6 +8,7 @@ import tf
 import numpy as np
 import matplotlib.pyplot as plt
 import rospy
+import os.path
 
 import actionlib
 import actionlib_msgs.msg as act_msgs # import *
@@ -38,16 +39,21 @@ class copDetection():
 		'PREEMPTING', 'RECALLING', 'RECALLED',
 		'LOST']
 
+		# Get location of parent directory
+		curfilePath = os.path.abspath(__file__)
+		curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
+		parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
+
 		# Get list of objects and their locations
-		mapInfo = 'map2.yaml'
+		mapInfo = parentDir + '/models/map2.yaml'
 		self.objLocations = getObjects(mapInfo)
 		vertexes = self.objLocations.values()
 		vertexKeys = self.objLocations.keys()
 
 		# Load Floyd Warshall info
-		self.mapGrid = np.load('mapGrid.npy')
-		self.floydWarshallCosts = np.load('floydWarshallCosts20.npy')
-		self.floydWarshallNextPlace = np.load('floydWarshallNextPlace.npy')
+		self.mapGrid = np.load(parentDir + '/resources/mapGrid.npy')
+		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts20.npy')
+		self.floydWarshallNextPlace = np.load(parentDir + '/resources/floydWarshallNextPlace.npy')
 
 		# Evasion Parameters
 		reevaluationTime = 3 # Time to wait before reevaluating the path robber is following
