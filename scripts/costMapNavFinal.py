@@ -139,7 +139,7 @@ def mapPub():
 		  break
 		rospy.sleep(1)
 
-def createGrid(pose):
+def createGrid():
 
 	robberName = "roy"
 
@@ -257,15 +257,14 @@ def convertPositionToGrid(x,y,grid): #objects and robber
 	gridY = int(y/SizeY)
 	return gridX, gridY
 
-def evaluateFloydCost(robLoc, pose, floydWarshallCosts, mapGrid, nextPlace):
+def evaluateFloydCost(robLoc, pose, floydWarshallCosts, mapGrid, nextPlace, objects):
 	robGridLocY, robGridLocX = convertPositionToGrid(robLoc.pose.position.x, robLoc.pose.position.y, mapGrid)
 	# print(str(copGridLocX) + " " + str(copGridLocY))
-	poseGridLocY, poseGridLocX = convertPoseToGridLocation(pose.pose.position.x, pose.pose.position.y, mapGrid)
-	path = makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
+	objGridLocY, objGridLocX = convertPoseToGridLocation(pose.pose.position.x, pose.pose.position.y, mapGrid)
+	path = path(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
 	cost = 0
 	for point in path:
 		poseGridLocY, poseGridLocX = point
-		pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
 		while pointCost == np.Inf:
 			poseGridLocY+=1
 			if poseGridLocY>39:
