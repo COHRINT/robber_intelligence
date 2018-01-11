@@ -9,8 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import rospy
 import os.path
+import scipy.stats
 
-# import actionlib
+import actionlib
 import actionlib_msgs.msg as act_msgs # import *
 import geometry_msgs.msg as geo_msgs # geo_msgs.Pose, geo_msgs.PoseWithCovarianceStamped, geo_msgs.Point, geo_msgs.Quaternion, geo_msgs.Twist, geo_msgs.Vector3
 import move_base_msgs.msg as mov_msgs # import mov_msgs.MoveBaseAction, mov_msgs.MoveBaseGoal
@@ -23,7 +24,7 @@ class copDetection():
 	def __init__(self, copName, robberName):
 		# Setup node
 		rospy.init_node('copEvader')
-		rospy.on_shutdown(self.shutDown)
+		# rospy.on_shutdown(self.shutDown)
 
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
@@ -62,6 +63,10 @@ class copDetection():
 		self.originY, self.originX = -3.6, -9.6 # ????
 	    # mapSizeY, mapSizeX = 0.18, 0.34
 		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
+
+		# print(self.findMaxCost())
+		costDistribution = scipy.stats.norm(206.06, 148.51)
+		print(costDistribution.cdf(206.06))
 
 		# Begin Evasion
 		while not rospy.is_shutdown():
@@ -186,6 +191,37 @@ class copDetection():
 		# rospy.sleep(2)
 		# self.cmd_vel_pub.publish(Twist())
 		rospy.sleep(1)
+
+	def findMaxCost(self): #Max is 1083, (mean=206.05962, std_dev=148.51310204559596)
+		floydSize = self.floydWarshallCosts.shape
+		maxCost = 0
+		costArray = []
+		print("Finding mean, std deviation of costs")
+		# Need to run through each location of robber to each object with each location of cop
+		# Run through every cell in floydGrid
+		for i in range(floydSize[0]): # go through robber locations
+		    for j in range(floydSize[1]):
+				for objKey in self.objLocations.keys(): # go through objects
+				 	poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(self.objLocations[objKey].pose.position.y, self.objLocations[objKey].pose.position.x)
+					path = self.makePath(i, j, poseGridLocY, poseGridLocX)
+					for k in range(floydSize[2]):
+						for l in range(floydSize[3]):
+							cost = 0
+							for point in path:
+								poseGridLocY, poseGridLocX = point
+								pointCost = self.floydWarshallCosts[k][l][poseGridLocY][poseGridLocX]
+								while pointCost == np.Inf:
+									poseGridLocY+=1
+									if poseGridLocY>39:
+										poseGridLocY = 0
+									pointCost = self.floydWarshallCosts[k][l][poseGridLocY][poseGridLocX]
+								cost += pointCost
+							costArray.append(cost)
+							# if cost>maxCost:
+							#     maxCost = cost
+
+		return np.mean(costArray), np.std(costArray)
+
 
 
 def getObjects(mapInfo):
