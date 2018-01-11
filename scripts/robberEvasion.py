@@ -25,6 +25,9 @@ class robberEvasion():
 		rospy.init_node('robberEvasion')
 		#rospy.on_shutdown(self.shutDown) # Not Working
 
+        # robberGoalPub = rospy.Publisher('robberGoalPub', robber_intelligence/RobberEvasion, queue_size=10)
+
+
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
 		rospy.Subscriber("/" + robberName + "/base_footprint", geo_msgs.TransformStamped, self.getRobberLocation)
@@ -85,6 +88,9 @@ class robberEvasion():
 			rospy.loginfo(goal)
 			# TODO: send goal here
 			# self.mover_base.send_goal(goal)
+            # TODO: send goal here to robber_evasion_planner using pub/sub or srv?
+			self.mover_base.send_goal(goal)
+
 
 
 			# Would this make it so you wait for 2 seconds every time?
@@ -205,6 +211,9 @@ class robberEvasion():
 		# rospy.sleep(2)
 		# self.cmd_vel_pub.publish(Twist())
 		rospy.is_shutdown() 
+
+
+
 
 
 def getObjects(mapInfo):
