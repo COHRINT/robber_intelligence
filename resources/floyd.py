@@ -24,7 +24,7 @@ import yaml
 
 def floydWarshallAlgorithm():
     # Get map information
-    gridScale = .05 # size of each grid rectangle compared to map size
+    gridScale = .05 # size of each grid rectangle compared to map size (makes a 20x20 grid)
     curfilePath = os.path.abspath(__file__)
     curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
     parentDir = os.path.abspath(os.path.join(curDir, os.pardir))

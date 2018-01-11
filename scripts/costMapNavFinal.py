@@ -17,7 +17,11 @@ import os.path
 import cv2
 import numpy as np
 import std_msgs.msg as std_msgs
+<<<<<<< HEAD
 #from resources import floydWarshall 
+=======
+from resources import floydWarshall
+>>>>>>> 1f4b8cd184d479d98ec28b65857a9529c1b3d71c
 import matplotlib.pyplot as plt
 
 
@@ -34,8 +38,8 @@ class CurrentLocation():
 		mapPub()
 
 	def getRobberLocation(self, tfMsg):
-		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
-			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
+		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(),
+			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z),
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
 		self.robLoc = poseMsg
 
@@ -93,10 +97,14 @@ def mapPub():
 
 	# Keeping track
 	n_locations = len(vertexes)
+<<<<<<< HEAD
 	
 	for objKey in objLocations.keys():
 		costs = evaluateFloydCost(self.robLoc, floydWarshallCosts, mapGrid, nextPlace, objLocations[objKey])
 		newCosts = objNames[objKey] - costs
+=======
+
+>>>>>>> 1f4b8cd184d479d98ec28b65857a9529c1b3d71c
 
 	#floyd-warshall
 	#costs = np.load('floydWarshallCosts.npy')
@@ -115,7 +123,7 @@ def mapPub():
 				break
 			else:
 				location = vertexes[5]
-				
+
 		# Set up goal
 		goal = mov_msgs.MoveBaseGoal()
 		goal.target_pose.pose = location
@@ -151,7 +159,7 @@ def createGrid():
 	# Get list of objects and their locations
 
 	#The current position as retrieved
- 
+
 
 	#costs = floydWarshall.floyds(grid);
 	#floydWarshall.displayMap(costs,pose);
@@ -169,7 +177,7 @@ def createGrid():
 	vertexes = objLocations.values()
 	vertexKeys = objLocations.keys()
 	mapGrid = convertMapToGrid(mapImgLocation, mapInfoLocation, gridScale)
- 
+
 	# Apply floyd warshall algorithm
 	#print(len(mapGrid))
 	#print(len(mapGrid[0]))
@@ -265,10 +273,15 @@ def convertPositionToGrid(x,y,grid): #objects and robber
 def evaluateFloydCost(robLoc, floydWarshallCosts, mapGrid, nextPlace, objects):
 	robGridLocY, robGridLocX = convertPositionToGrid(robLoc.pose.position.x, robLoc.pose.position.y, mapGrid)
 	# print(str(copGridLocX) + " " + str(copGridLocY))
+<<<<<<< HEAD
 	objGridLocY, objGridLocX = convertPositionToGrid(objects.position.x, objects.position.y, mapGrid)
 
 	cost = floydWarshallCosts[objGridLocY][objGridLocX][poseGridLocY][poseGridLocX]
 
+=======
+	objGridLocY, objGridLocX = convertPoseToGridLocation(pose.pose.position.x, pose.pose.position.y, mapGrid)
+	cost = floydWarshallCosts[objGridLocY][objGridLocX][robGridLocY][robGridLocX]
+>>>>>>> 1f4b8cd184d479d98ec28b65857a9529c1b3d71c
 	return cost
 
 def main():
