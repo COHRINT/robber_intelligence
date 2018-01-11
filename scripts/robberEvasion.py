@@ -18,12 +18,12 @@ import std_msgs.msg as std_msgs
 import nav_msgs.srv as nav_srv
 import nav_msgs.msg as nav_msgs
 
-class copDetection():
+class robberEvasion():
 
 	def __init__(self, copName, robberName):
 		# Setup node
-		rospy.init_node('copEvader')
-		rospy.on_shutdown(self.shutDown)
+		rospy.init_node('robberEvasion')
+		rospy.on_shutdown(self.shutDown) # Not Working
 
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
@@ -75,7 +75,8 @@ class copDetection():
 			goal.target_pose.header.frame_id = 'map'
 			goal.target_pose.header.stamp = rospy.Time.now()
 			rospy.loginfo(goal)
-			self.mover_base.send_goal(goal)
+            # TODO: send goal here
+			# self.mover_base.send_goal(goal)
 
 
 			# Would this make it so you wait for 2 seconds every time?
@@ -85,7 +86,7 @@ class copDetection():
 			# While robber is travelling to destination, evaluate the path it is following every few seconds
 			state = self.mover_base.get_state()
 			pathFailure = False
-			while (status[state]=='PENDING' or status[state]=='ACTIVE') and (pathFailure==False):
+			while (pathFailure==False): #(status[state]=='PENDING' or status[state]=='ACTIVE') and
 				# Evaluate cost of path
 				newCost = self.evaluateFloydCost(self.objLocations[curDestination])
 				print ("New Cost: " + str(newCost))

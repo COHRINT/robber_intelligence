@@ -17,7 +17,7 @@ import os.path
 import cv2
 import numpy as np
 import std_msgs.msg as std_msgs
-from resources import floydWarshall 
+from resources import floydWarshall
 import matplotlib.pyplot as plt
 
 
@@ -34,8 +34,8 @@ class CurrentLocation():
 		mapPub()
 
 	def getRobberLocation(self, tfMsg):
-		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(), 
-			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z), 
+		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(),
+			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z),
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
 		self.robLoc = poseMsg
 
@@ -91,7 +91,7 @@ def mapPub():
 
 	# Keeping track
 	n_locations = len(vertexes)
-	
+
 
 	#floyd-warshall
 	costs = np.load('floydWarshallCosts.npy')
@@ -110,7 +110,7 @@ def mapPub():
 				break
 			else:
 				location = vertexes[5]
-				
+
 		# Set up goal
 		goal = mov_msgs.MoveBaseGoal()
 		goal.target_pose.pose = location
@@ -146,7 +146,7 @@ def createGrid():
 	# Get list of objects and their locations
 
 	#The current position as retrieved
- 
+
 
 	#costs = floydWarshall.floyds(grid);
 	#floydWarshall.displayMap(costs,pose);
@@ -164,7 +164,7 @@ def createGrid():
 	vertexes = objLocations.values()
 	vertexKeys = objLocations.keys()
 	mapGrid = convertMapToGrid(mapImgLocation, mapInfoLocation, gridScale)
- 
+
 	# Apply floyd warshall algorithm
 	#print(len(mapGrid))
 	#print(len(mapGrid[0]))
@@ -261,16 +261,7 @@ def evaluateFloydCost(robLoc, pose, floydWarshallCosts, mapGrid, nextPlace, obje
 	robGridLocY, robGridLocX = convertPositionToGrid(robLoc.pose.position.x, robLoc.pose.position.y, mapGrid)
 	# print(str(copGridLocX) + " " + str(copGridLocY))
 	objGridLocY, objGridLocX = convertPoseToGridLocation(pose.pose.position.x, pose.pose.position.y, mapGrid)
-	path = path(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
-	cost = 0
-	for point in path:
-		poseGridLocY, poseGridLocX = point
-		while pointCost == np.Inf:
-			poseGridLocY+=1
-			if poseGridLocY>39:
-				poseGridLocY = 0
-			pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
-		cost += pointCost
+	cost = floydWarshallCosts[objGridLocY][objGridLocX][robGridLocY][robGridLocX]
 	return cost
 
 def main():
