@@ -1,0 +1,50 @@
+
+
+bookcase:
+  name: bookcase
+  value: 50.0
+
+
+desk:
+  name: desk
+  value: 12.0
+
+
+chair:
+  name: chair
+  value: 5.00
+
+
+filing cabinet:
+  name: filing cabinet
+  value: 100.0
+
+dining table:
+  name: dining table
+  value: 30.0
+
+
+mars poster:
+  name: mars poster
+  value: 0.50
+
+
+cassini poster:
+  name: cassini poster
+  value: 0.00
+
+
+fridge:
+  name: fridge
+  value: 10.0
+
+
+checkers table:
+  name: checkers table
+  value: 0.50
+
+
+fern:
+  name: fern
+  value: 10.0
+

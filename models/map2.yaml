@@ -65,8 +65,9 @@ bookcase: # good
   color: sandybrown
   centroid_x: 0.0
   centroid_y: -1.1662
-  length: 0.18
-  width: 0.38
+  length: 0.18 # y-axis
+  width: 0.38 # x-axis
+  value: 50.0
   # degrees obj's length to map's pos-x axis
   orientation: 270
   shape: rectangle
@@ -78,6 +79,7 @@ desk: # good
   centroid_y: -2.0
   length: 0.61
   width: 0.99
+  value: 12.0
   # degrees obj's length to map's pos-x axis
   orientation: 0.0
   shape: rectangle
@@ -89,6 +91,7 @@ chair: # good
   centroid_y: -2.435
   length: 0.46
   width: 0.41
+  value: 5.00
   # degrees obj's length to map's pos-x axis
   orientation: 90.0
   shape: rectangle
@@ -100,6 +103,7 @@ filing cabinet:
   centroid_y: -1.3262
   length: 0.5
   width: 0.37
+  value: 100.0
   # degrees obj's length to map's pos-x axis
   orientation: 270.0
   shape: rectangle
@@ -111,6 +115,7 @@ dining table: # good
   centroid_y: -2.3
   length: 1.17
   width: 0.69
+  value: 30.0
   # degrees obj's length to map's pos-x axis
   orientation: 270
   shape: rectangle
@@ -122,6 +127,7 @@ mars poster: # good
   centroid_y: 3.475
   length: 0.05
   width: 0.84
+  value: 0.50
   # degrees obj's length to map's pos-x axis
   orientation: 270.0
   shape: rectangle
@@ -133,6 +139,7 @@ cassini poster: # good
   centroid_y: 3.475
   length: 0.05
   width: 0.56
+  value: 0.00
   # degrees obj's length to map's pos-x axis
   orientation: 270.0
   shape: rectangle
@@ -144,6 +151,7 @@ fridge:
   centroid_y: 2.6 #3.07
   length: 0.46
   width: 0.46
+  value: 5.00
   # degrees obj's length to map's pos-x axis
   orientation: 180.0 # 315
   shape: rectangle
@@ -155,6 +163,7 @@ checkers table:
   centroid_y: 2.16
   length: 0.5
   width: 0.5
+  value: 0.50
   # degrees obj's length to map's pos-x axis
   orientation: 90.0 #270
   shape: rectangle
@@ -166,6 +175,7 @@ fern:
   centroid_y: .7 # 1.06
   length: 0.5
   width: 0.5
+  value: 10.0
   # degrees obj's length to map's pos-x axis
   orientation: 270
   shape: oval
