@@ -5,7 +5,7 @@ Robber Navigation
 Escapes from cops while stealing goods
 '''
 
-__author__ = "Sousheel Vunnam"
+__author__ = "Sousheel Vunnam, Jamison McGinley"
 __copyright__ = "Copyright 2018, COHRINT"
 __credits__ = "Nisar Ahmed"
 __license__ = "GPL"

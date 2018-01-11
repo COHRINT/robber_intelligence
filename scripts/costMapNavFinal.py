@@ -17,7 +17,7 @@ import os.path
 import cv2
 import numpy as np
 import std_msgs.msg as std_msgs
-from resources import floydWarshall 
+#from resources import floydWarshall 
 import matplotlib.pyplot as plt
 
 
@@ -66,6 +66,7 @@ def mapPub():
 	objDict = yamled.values()
 	objLocations = {}
 	objNames = {}
+	objects = {}
 	for item in objDict:
 		itemName = item['name']
 		if itemName[0:4] != "wall":
@@ -75,6 +76,7 @@ def mapPub():
 			itemLoc = geo_msgs.Pose(geo_msgs.Point(x_loc, y_loc, 0), geo_msgs.Quaternion(quat[0],quat[1],quat[2],quat[3]))
 			objLocations[itemName] = itemLoc
 			objNames[itemName] = ([item['value']])
+			objects[itemName] = x_loc
 
 	vertexes = objLocations.values()
 	vertexKeys = objLocations.keys()
@@ -92,14 +94,17 @@ def mapPub():
 	# Keeping track
 	n_locations = len(vertexes)
 	
+	for objKey in objLocations.keys():
+		costs = evaluateFloydCost(self.robLoc, floydWarshallCosts, mapGrid, nextPlace, objLocations[objKey])
+		newCosts = objNames[objKey] - costs
 
 	#floyd-warshall
-	costs = np.load('floydWarshallCosts.npy')
-	nextPlace = np.load('floydWarshallNextPlace.npy')
-	mapGid = np.load('mapGrid.npy')
+	#costs = np.load('floydWarshallCosts.npy')
+	#nextPlace = np.load('floydWarshallNextPlace.npy')
+	#mapGid = np.load('mapGrid.npy')
 
-	#print(path(2,2,10,10, nextPlace)) #convert
-	# overall cost = value - flydcost
+
+
 	while not rospy.is_shutdown():
 		for i in xrange(0, n_locations): #change to iterate through adjusted values
 			maximum = max(objNames.iteritems(), key=operator.itemgetter(1))[0]
@@ -257,20 +262,13 @@ def convertPositionToGrid(x,y,grid): #objects and robber
 	gridY = int(y/SizeY)
 	return gridX, gridY
 
-def evaluateFloydCost(robLoc, pose, floydWarshallCosts, mapGrid, nextPlace, objects):
+def evaluateFloydCost(robLoc, floydWarshallCosts, mapGrid, nextPlace, objects):
 	robGridLocY, robGridLocX = convertPositionToGrid(robLoc.pose.position.x, robLoc.pose.position.y, mapGrid)
 	# print(str(copGridLocX) + " " + str(copGridLocY))
-	objGridLocY, objGridLocX = convertPoseToGridLocation(pose.pose.position.x, pose.pose.position.y, mapGrid)
-	path = path(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX, nextPlace)
-	cost = 0
-	for point in path:
-		poseGridLocY, poseGridLocX = point
-		while pointCost == np.Inf:
-			poseGridLocY+=1
-			if poseGridLocY>39:
-				poseGridLocY = 0
-			pointCost = floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
-		cost += pointCost
+	objGridLocY, objGridLocX = convertPositionToGrid(objects.position.x, objects.position.y, mapGrid)
+
+	cost = floydWarshallCosts[objGridLocY][objGridLocX][poseGridLocY][poseGridLocX]
+
 	return cost
 
 def main():
