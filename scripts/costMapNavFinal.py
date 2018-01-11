@@ -80,7 +80,6 @@ def mapPub():
 			itemLoc = geo_msgs.Pose(geo_msgs.Point(x_loc, y_loc, 0), geo_msgs.Quaternion(quat[0],quat[1],quat[2],quat[3]))
 			objLocations[itemName] = itemLoc
 			objNames[itemName] = ([item['value']])
-			objects[itemName] = x_loc
 
 	vertexes = objLocations.values()
 	vertexKeys = objLocations.keys()
@@ -97,14 +96,12 @@ def mapPub():
 
 	# Keeping track
 	n_locations = len(vertexes)
-<<<<<<< HEAD
+
 	
 	for objKey in objLocations.keys():
 		costs = evaluateFloydCost(self.robLoc, floydWarshallCosts, mapGrid, nextPlace, objLocations[objKey])
 		newCosts = objNames[objKey] - costs
-=======
 
->>>>>>> 1f4b8cd184d479d98ec28b65857a9529c1b3d71c
 
 	#floyd-warshall
 	#costs = np.load('floydWarshallCosts.npy')
@@ -273,15 +270,11 @@ def convertPositionToGrid(x,y,grid): #objects and robber
 def evaluateFloydCost(robLoc, floydWarshallCosts, mapGrid, nextPlace, objects):
 	robGridLocY, robGridLocX = convertPositionToGrid(robLoc.pose.position.x, robLoc.pose.position.y, mapGrid)
 	# print(str(copGridLocX) + " " + str(copGridLocY))
-<<<<<<< HEAD
+
 	objGridLocY, objGridLocX = convertPositionToGrid(objects.position.x, objects.position.y, mapGrid)
 
 	cost = floydWarshallCosts[objGridLocY][objGridLocX][poseGridLocY][poseGridLocX]
 
-=======
-	objGridLocY, objGridLocX = convertPoseToGridLocation(pose.pose.position.x, pose.pose.position.y, mapGrid)
-	cost = floydWarshallCosts[objGridLocY][objGridLocX][robGridLocY][robGridLocX]
->>>>>>> 1f4b8cd184d479d98ec28b65857a9529c1b3d71c
 	return cost
 
 def main():
