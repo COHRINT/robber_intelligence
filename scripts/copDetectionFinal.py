@@ -23,6 +23,7 @@ class copDetection():
 	def __init__(self, copName, robberName):
 		# Setup node
 		rospy.init_node('copEvader')
+		rospy.on_shutdown(self.shutDown)
 
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
@@ -32,19 +33,17 @@ class copDetection():
 		self.robLoc = geo_msgs.PoseStamped()
 
 		# Setup nav stack
-		mover_base = actionlib.SimpleActionClient(robberName + "/move_base", mov_msgs.MoveBaseAction)
-		mover_base.wait_for_server(rospy.Duration(5))
+		self.mover_base = actionlib.SimpleActionClient(robberName + "/move_base", mov_msgs.MoveBaseAction)
+		self.mover_base.wait_for_server(rospy.Duration(5))
 		status = ['PENDING', 'ACTIVE', 'PREEMPTED',
 		'SUCCEEDED', 'ABORTED', 'REJECTED',
 		'PREEMPTING', 'RECALLING', 'RECALLED',
 		'LOST']
 
-		# Get location of parent directory
+		# Get list of objects and their locations
 		curfilePath = os.path.abspath(__file__)
 		curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
 		parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
-
-		# Get list of objects and their locations
 		mapInfo = parentDir + '/models/map2.yaml'
 		self.objLocations = getObjects(mapInfo)
 		vertexes = self.objLocations.values()
@@ -67,7 +66,7 @@ class copDetection():
 		# Begin Evasion
 		while not rospy.is_shutdown():
 			# Choose destination of least cost
-			curCost, curDestination = floydChooseDestination()
+			curCost, curDestination = self.floydChooseDestination()
 			rospy.loginfo("Stealing goods at " + curDestination + " with danger level of " + str(curCost))
 
 			# Travel to destination
@@ -76,7 +75,7 @@ class copDetection():
 			goal.target_pose.header.frame_id = 'map'
 			goal.target_pose.header.stamp = rospy.Time.now()
 			rospy.loginfo(goal)
-			mover_base.send_goal(goal)
+			self.mover_base.send_goal(goal)
 
 
 			# Would this make it so you wait for 2 seconds every time?
@@ -84,11 +83,11 @@ class copDetection():
 
 
 			# While robber is travelling to destination, evaluate the path it is following every few seconds
-			state = mover_base.get_state()
+			state = self.mover_base.get_state()
 			pathFailure = False
 			while (status[state]=='PENDING' or status[state]=='ACTIVE') and (pathFailure==False):
 				# Evaluate cost of path
-				newCost = evaluateFloydCost(self.objLocations[curDestination])
+				newCost = self.evaluateFloydCost(self.objLocations[curDestination])
 				print ("New Cost: " + str(newCost))
 
 				# Check if path is too dangerous
@@ -96,7 +95,7 @@ class copDetection():
 					pathFailure = True
 
 				# Display Costmap
-				copGridLocY, copGridLocX = convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
+				copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
 				plt.imshow(self.floydWarshallCosts[copGridLocY][copGridLocX]);
 				plt.ion()
 				plt.show();
@@ -104,12 +103,12 @@ class copDetection():
 
 				# Pause for few seconds until reevalutation of path
 				rospy.sleep(reevaluationTime)
-				state = mover_base.get_state()
+				state = self.mover_base.get_state()
 
 			# Check what robber has accomplished
 			if pathFailure == True: # Robber path is too dangerous, choose a new path
 				rospy.loginfo("Path is too dangerous, finding a new object to steal.")
-				mover_base.cancel_goal()
+				self.mover_base.cancel_goal()
 			elif status[state] != 'SUCCEEDED': # Failure in getting to object
 				rospy.loginfo("Robber failed to reach object with error code " + str(state) + ": " + status[state] + ". Finding something else to steal.")
 			else: # SUCCESSFUL ROBBERY
@@ -121,7 +120,7 @@ class copDetection():
 		maxDist = 0
 		maxDistLocation = ""
 		for objKey in self.objLocations.keys():
-			objCost = evaluateFloydCost(objLocations[objKey])
+			objCost = self.evaluateFloydCost(self.objLocations[objKey])
 			print(objKey + ": " + str(objCost))
 			if objCost > maxDist:
 				maxDist = objCost
@@ -131,10 +130,10 @@ class copDetection():
 
 	# ALSO need to comment this....
 	def evaluateFloydCost(self, objPose):
-	    copGridLocY, copGridLocX = convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
-	    robGridLocY, robGridLocX = convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
-	    poseGridLocY, poseGridLocX = convertPoseToGridLocation(objPose.pose.position.y, objPose.pose.position.x)
-	    path = makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX)
+	    copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
+	    robGridLocY, robGridLocX = self.convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
+	    poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(objPose.pose.position.y, objPose.pose.position.x)
+	    path = self.makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX)
 	    cost = 0
 	    for point in path:
 			poseGridLocY, poseGridLocX = point
@@ -181,12 +180,12 @@ class copDetection():
 		return path
 
 
-    # def shutDown(self):
-    #         rospy.loginfo("Stopping the robot...")
-    #         self.mover_base.cancel_goal()
-    #         rospy.sleep(2)
-    #         self.cmd_vel_pub.publish(Twist())
-    #         rospy.sleep(1)
+	def shutDown(self):
+		rospy.loginfo("Stopping the robot...")
+		self.mover_base.cancel_goal()
+		# rospy.sleep(2)
+		# self.cmd_vel_pub.publish(Twist())
+		rospy.sleep(1)
 
 
 def getObjects(mapInfo):
