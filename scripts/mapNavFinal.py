@@ -24,7 +24,10 @@ def mapPub():
     goal.target_pose.header.stamp = 0
     goal.target_pose.header.frame_id = ""
 
-    mapInfo = 'map2.yaml'
+    curfilePath = os.path.abspath(__file__)
+    curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
+    parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
+    mapInfo = parentDir + '/models/map2.yaml'
     with open(mapInfo, 'r') as stream:
         try:
             yamled = yaml.load(stream)
@@ -52,7 +55,7 @@ def mapPub():
         'PREEMPTING', 'RECALLING', 'RECALLED',
         'LOST']
 
-    mover_base = actionlib.SimpleActionClient("deckard/move_base", mov_msgs.MoveBaseAction)
+    mover_base = actionlib.SimpleActionClient("zhora/move_base", mov_msgs.MoveBaseAction)
     mover_base.wait_for_server(rospy.Duration(5))
 
     # Keeping track
