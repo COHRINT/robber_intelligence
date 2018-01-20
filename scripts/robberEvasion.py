@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import rospy
 import os.path
+import scipy.stats
 
 import actionlib
 import actionlib_msgs.msg as act_msgs # import *
@@ -25,7 +26,7 @@ class robberEvasion():
 		rospy.init_node('robberEvasion')
 		#rospy.on_shutdown(self.shutDown) # Not Working
 
-        # robberGoalPub = rospy.Publisher('robberGoalPub', robber_intelligence/RobberEvasion, queue_size=10)
+		# robberGoalPub = rospy.Publisher('robberGoalPub', robber_intelligence/RobberEvasion, queue_size=10)
 
 
 		# Retrieve robot locations
@@ -70,10 +71,11 @@ class robberEvasion():
 		#determine adjusted costs
 		for objKey in self.objLocations.keys():
 			costs = self.evaluateFloydCostBased(self.objLocations[objKey])
-			rospy.loginfo(costs)
-			newCosts = self.objNames[objKey] - costs[objKey]
-
-
+			rospy.loginfo(self.objNames[objKey])
+	
+		meanCost, stdCost = self.findMaxCostBased()
+		costDistribution = scipy.stats.norm(meanCost, stdCost)
+		rospy.loginfo(costDistribution.cdf(meanCost))
 		# Begin Evasion
 		while not rospy.is_shutdown():
 			# Choose destination of least cost
@@ -88,7 +90,7 @@ class robberEvasion():
 			rospy.loginfo(goal)
 			# TODO: send goal here
 			# self.mover_base.send_goal(goal)
-            # TODO: send goal here to robber_evasion_planner using pub/sub or srv?
+			# TODO: send goal here to robber_evasion_planner using pub/sub or srv?
 			self.mover_base.send_goal(goal)
 
 
@@ -171,6 +173,24 @@ class robberEvasion():
 
 		return cost
 
+	def findMaxCostBased(self): #Max is approx. 80 from file cabinet, (mean=2.7, std_dev=31.4)
+		floydSize = self.floydWarshallCosts.shape
+		maxCost = 0
+		costArray = []
+		print("Finding mean, std deviation of costs")
+		# Need to run through each location of robber 
+		# Run through every cell in floydGrid
+		for i in range(floydSize[0]): # go through robber locations
+			for j in range(floydSize[1]):
+				for objKey in self.objLocations.keys(): # go through objects
+					poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(self.objLocations[objKey].pose.position.y, self.objLocations[objKey].pose.position.x)
+					cost = self.floydWarshallCosts[i][j][poseGridLocY][poseGridLocX]
+					if cost != np.inf: #exclude wall locations
+						cost = (-1*cost) + self.objNames[objKey]
+						costArray.append(cost)
+					 #if we're going to normalize anyway, consider the value dimensionless in which case conversion doesn't matter
+		return np.mean(costArray), np.std(costArray)
+
 	# I need to comment this, investigate floyd algorithm file
 	def convertPoseToGridLocation(self, y, x):
 		y += -1*self.originY
@@ -204,6 +224,20 @@ class robberEvasion():
 			path.append((ux, uy))
 		return path
 
+	def countPath(self, ux, uy, vx, vy):
+		x = 0
+		y = 0
+		startX = ux
+		startY = uy
+		if self.floydWarshallNextPlace[ux, uy, vx, vy] == None:
+			return []
+		path = [(ux, uy)]
+		while (ux != vx) or (uy != vy):
+			ux, uy = self.floydWarshallNextPlace[ux, uy, vx, vy]
+			path.append((ux, uy))
+			x = x + ux - startX
+			y = y + uy - startY
+		return x,y
 
 	def shutDown(self):
 		rospy.loginfo("Stopping the robot...")
@@ -211,8 +245,6 @@ class robberEvasion():
 		# rospy.sleep(2)
 		# self.cmd_vel_pub.publish(Twist())
 		rospy.is_shutdown() 
-
-
 
 
 
