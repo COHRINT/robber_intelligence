@@ -1,0 +1,3 @@
+bool isRunning
+---
+geometry_msgs/PoseStamped robberGoalResponse

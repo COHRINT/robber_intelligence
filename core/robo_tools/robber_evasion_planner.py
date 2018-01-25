@@ -23,15 +23,25 @@ class robberEvasionGoalPlanner(GoalPlanner):
 		super(robberGoalPlanner, self).__init__(robberName, robot_pose)
 
 	def get_goal_pose(self,pose=None):
+	"""
+	Find goal pose from robber evasion server
+	Parameters
+	----------
+	Returns
+	--------
+	goal_pose [array]
+		Goal pose in the form [x,y,theta] as [m,m,degrees]
+	"""
+	rospy.wait_for_service('robberEvasionGoal')
+    try:
+        getRobberGoal = rospy.ServiceProxy('robberEvasionGoal', robberEvasionGoal)
+        resp1 = getRobberGoal(True)
+        return resp1.sum
+    except rospy.ServiceException, e:
+        print "Service call failed: %s"%e
 # 		"""Find goal pose from POMDP policy translator server
 #
-# 		Parameters
-# 		----------
-# 		Returns
-# 		--------
-# 		goal_pose [array]
-# 			Goal pose in the form [x,y,theta] as [m,m,degrees]
-# 		"""
+
 # 		discrete_flag = True
 # 		if type(self.belief) is np.ndarray:
 # 			discrete_flag = True

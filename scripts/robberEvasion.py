@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import rospy
 import os.path
+import scipy.stats
 
 # import actionlib
 import actionlib_msgs.msg as act_msgs # import *
@@ -25,6 +26,10 @@ class robberEvasion():
 		rospy.init_node('robberEvasion')
 		rospy.on_shutdown(self.shutDown) # Not Working
         # robberGoalPub = rospy.Publisher('robberGoalPub', robber_intelligence/RobberEvasion, queue_size=10)
+
+		# Setup robber service
+		robberSrv = rospy.Service('robberEvasionGoal', robberEvasionGoal, self.handleRobberSrv)
+		self.curRobberGoal = geo_msgs.PoseStamped()
 
 		# Retrieve robot locations
 		rospy.Subscriber("/" + copName + "/base_footprint", geo_msgs.TransformStamped, self.getCopLocation)
@@ -64,6 +69,11 @@ class robberEvasion():
 	    # mapSizeY, mapSizeX = 0.18, 0.34
 		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
 
+        # Distributions of cost/reward measures
+        copSafetyMean = 206.06
+        copSafetyStdDev = 148.51
+        copSafetyDistribution = scipy.stats.norm(copSafetyMean, copSafetyStdDev) #query with copSafetyDistribution.cdf(value)
+
 		# Begin Evasion
 		while not rospy.is_shutdown():
 			# Choose destination of least cost
@@ -77,6 +87,8 @@ class robberEvasion():
 			goal.target_pose.header.stamp = rospy.Time.now()
 			rospy.loginfo(goal)
             # TODO: send goal here to robber_evasion_planner using pub/sub or srv?
+			self.curRobberGoal = self.objLocations[curDestination].pose
+
 			self.mover_base.send_goal(goal)
 
 
@@ -115,6 +127,11 @@ class robberEvasion():
 				rospy.loginfo("Robber failed to reach object with error code " + str(state) + ": " + status[state] + ". Finding something else to steal.")
 			else: # SUCCESSFUL ROBBERY
 				rospy.loginfo("MWUAHAHAHAHAHA You've successfully stolen valuable goods from the " + curDestination)
+
+	# Sends goal of robber to robber_evasion_planner
+	def handleRobberSrv(self, req):
+		if req.isRunning:
+	    	return robberEvasionGoalResponse(self.curRobberGoal)
 
 
 	# Goes through entire list of objects and returns object with path that is least likely to be detected and its cost
@@ -218,7 +235,7 @@ def getObjects(mapInfo):
 
 
 def main():
-	copDetection(copName="zhora", robberName="deckard")
+	robberEvasion(copName="zhora", robberName="deckard")
 	rospy.spin()
 
 if __name__ == '__main__':
