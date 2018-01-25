@@ -68,14 +68,17 @@ class robberEvasion():
 		# mapSizeY, mapSizeX = 0.18, 0.34
 		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
 
-		#determine adjusted costs
+		#determine adjusted costs [OLD]
 		for objKey in self.objLocations.keys():
 			costs = self.evaluateFloydCostBased(self.objLocations[objKey])
 			rospy.loginfo(self.objNames[objKey])
 	
-		meanCost, stdCost = self.findMaxCostBased()
-		costDistribution = scipy.stats.norm(meanCost, stdCost)
-		rospy.loginfo(costDistribution.cdf(meanCost))
+		#[NEW]
+		costMax, meanCost, stdCost = self.findMaxCostBased()
+		costDistribution = scipy.stats.norm(meanCost,stdCost)
+		#ospy.loginfo(self.findMaxCostBased())
+		rospy.loginfo(costDistribution.cdf(costMax))
+		
 		# Begin Evasion
 		while not rospy.is_shutdown():
 			# Choose destination of least cost
@@ -187,9 +190,10 @@ class robberEvasion():
 					cost = self.floydWarshallCosts[i][j][poseGridLocY][poseGridLocX]
 					if cost != np.inf: #exclude wall locations
 						cost = (-1*cost) + self.objNames[objKey]
+						#rospy.loginfo(cost)
 						costArray.append(cost)
 					 #if we're going to normalize anyway, consider the value dimensionless in which case conversion doesn't matter
-		return np.mean(costArray), np.std(costArray)
+		return max(costArray), np.mean(costArray), np.std(costArray)
 
 	# I need to comment this, investigate floyd algorithm file
 	def convertPoseToGridLocation(self, y, x):
