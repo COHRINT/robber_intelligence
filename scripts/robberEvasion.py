@@ -18,6 +18,7 @@ import move_base_msgs.msg as mov_msgs # import mov_msgs.MoveBaseAction, mov_msgs
 import std_msgs.msg as std_msgs
 import nav_msgs.srv as nav_srv
 import nav_msgs.msg as nav_msgs
+from robber_intelligence.srv import robberEvasionGoal
 
 class robberEvasion():
 
@@ -25,9 +26,6 @@ class robberEvasion():
 		# Setup node
 		rospy.init_node('robberEvasion')
 		#rospy.on_shutdown(self.shutDown) # Not Working
-
-		# robberGoalPub = rospy.Publisher('robberGoalPub', robber_intelligence/RobberEvasion, queue_size=10)
-
 
 		# Setup robber service
 		robberSrv = rospy.Service('robberEvasionGoal', robberEvasionGoal, self.handleRobberSrv)
@@ -66,6 +64,7 @@ class robberEvasion():
 		# Evasion Parameters
 		reevaluationTime = 3 # Time to wait before reevaluating the path robber is following
 		dangerWeight = 0.75 # Amount of danger before robber should choose a new path
+		self.copDangerVsObjValueWeight = 0.5
 
 		# Map Parameters
 		self.originY, self.originX = -3.6, -9.6 # ????
@@ -73,9 +72,9 @@ class robberEvasion():
 		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
 
 		# Distributions of cost/reward measures
-        copSafetyMean = 206.06
-        copSafetyStdDev = 148.51
-        copSafetyDistribution = scipy.stats.norm(copSafetyMean, copSafetyStdDev) #query with copSafetyDistribution.cdf(value)
+		copSafetyMean = 206.06
+		copSafetyStdDev = 148.51
+		self.copSafetyDistribution = scipy.stats.norm(copSafetyMean, copSafetyStdDev) #query with copSafetyDistribution.cdf(value)
 
 		#determine adjusted costs [OLD]
 		for objKey in self.objLocations.keys():
@@ -83,10 +82,10 @@ class robberEvasion():
 			rospy.loginfo(self.objNames[objKey])
 
 		#[NEW]
-		costMax, meanCost, stdCost = self.findMaxCostBased()
-		costDistribution = scipy.stats.norm(meanCost,stdCost)
+		costMax, meanCost, stdCost = 0, 2.7, 31.4 # self.findMaxCostBased()
+		self.objValueDistribution = scipy.stats.norm(meanCost,stdCost)
 		#ospy.loginfo(self.findMaxCostBased())
-		rospy.loginfo(costDistribution.cdf(costMax))
+		rospy.loginfo(self.objValueDistribution.cdf(costMax))
 
 		# Begin Evasion
 		while not rospy.is_shutdown():
@@ -100,23 +99,20 @@ class robberEvasion():
 			goal.target_pose.header.frame_id = 'map'
 			goal.target_pose.header.stamp = rospy.Time.now()
 			rospy.loginfo(goal)
-            # TODO: send goal here to robber_evasion_planner using pub/sub or srv?
-			self.curRobberGoal = self.objLocations[curDestination].pose
 
+			# Send goal to planner
+			self.curRobberGoal = self.objLocations[curDestination].pose
 			self.mover_base.send_goal(goal)
 
-
-
 			# Would this make it so you wait for 2 seconds every time?
-			# mover_base.wait_for_result(rospy.Duration(2))
-
+			mover_base.wait_for_result(rospy.Duration(2))
 
 			# While robber is travelling to destination, evaluate the path it is following every few seconds
 			state = self.mover_base.get_state()
 			pathFailure = False
 			while (pathFailure==False): #(status[state]=='PENDING' or status[state]=='ACTIVE') and
 				# Evaluate cost of path
-				newCost = self.evaluateFloydCost(self.objLocations[curDestination])
+				newCost = self.evaluateFloydCost(self.objLocations[curDestination], curDestination)
 				print ("New Cost: " + str(newCost))
 
 				# Check if path is too dangerous
@@ -125,12 +121,12 @@ class robberEvasion():
 
 				# Display Costmap
 				copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
-				#plt.imshow(self.floydWarshallCosts[copGridLocY][copGridLocX]);
-				#plt.ion()
-				#plt.show();
-				#plt.pause(.0001)
+				# plt.imshow(self.floydWarshallCosts[copGridLocY][copGridLocX]);
+				# plt.ion()
+				# plt.show();
+				# plt.pause(.0001)
 
-				# Pause for few seconds until reevalutation of path
+				# Pause for few seconds until reevaluation of path
 				rospy.sleep(reevaluationTime)
 				state = self.mover_base.get_state()
 
@@ -146,29 +142,31 @@ class robberEvasion():
 	# Sends goal of robber to robber_evasion_planner
 	def handleRobberSrv(self, req):
 		if req.isRunning:
-	    	return robberEvasionGoalResponse(self.curRobberGoal)
+			return robberEvasionGoalResponse(self.curRobberGoal)
 
 
 	# Goes through entire list of objects and returns object with path that is least likely to be detected and its cost
 	def floydChooseDestination(self):
-		maxDist = 0
-		maxDistLocation = ""
+		maxCost = 0
+		maxCostLocation = ""
 		for objKey in self.objLocations.keys():
-			objCost = self.evaluateFloydCost(self.objLocations[objKey])
+			# Cop Danger
+			objCost = self.evaluateFloydCost(self.objLocations[objKey], objKey)
 			print(objKey + ": " + str(objCost))
-			if objCost > maxDist:
-				maxDist = objCost
-				maxDistLocation = objKey
-		return maxDist, maxDistLocation
+			if objCost > maxCost:
+				maxCost = objCost
+				maxCostLocation = objKey
+		return maxCost, maxCostLocation
 
 
 	# ALSO need to comment this....
-	def evaluateFloydCost(self, objPose):
+	def evaluateFloydCost(self, objPose, objKey):
 		copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
 		robGridLocY, robGridLocX = self.convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
 		poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(objPose.pose.position.y, objPose.pose.position.x)
 		path = self.makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX)
-		cost = 0
+		copCost = 0
+		# Calculate Cop Danger
 		for point in path:
 			poseGridLocY, poseGridLocX = point
 			pointCost = self.floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
@@ -177,37 +175,41 @@ class robberEvasion():
 				if poseGridLocY>39:
 					poseGridLocY = 0
 				pointCost = self.floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
-			cost += pointCost
+			copCost += pointCost
+		# Object Values
+		objCost = self.floydWarshallCosts[robGridLocY][robGridLocX][poseGridLocY][poseGridLocX]
+		objCost = (-1*objCost) + self.objNames[objKey]
+		# Normalize costs
+		copCost = self.copSafetyDistribution.cdf(copCost)
+		objCost = self.objValueDistribution.cdf(objCost)
+		cost = self.copDangerVsObjValueWeight * copCost + (1-self.copDangerVsObjValueWeight) * objCost
 		return cost
 
 	def evaluateFloydCostBased(self, objects):
 		robGridLocY, robGridLocX = self.convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
 		# print(str(copGridLocX) + " " + str(copGridLocY))
-
 		objGridLocY, objGridLocX = self.convertPoseToGridLocation(objects.pose.position.y, objects.pose.position.x)
-
 		cost = self.floydWarshallCosts[robGridLocY][robGridLocX][objGridLocY][objGridLocX]
-
 		return cost
 
-	def findMaxCostBased(self): #Max is approx. 80 from file cabinet, (mean=2.7, std_dev=31.4)
-		floydSize = self.floydWarshallCosts.shape
-		maxCost = 0
-		costArray = []
-		print("Finding mean, std deviation of costs")
-		# Need to run through each location of robber
-		# Run through every cell in floydGrid
-		for i in range(floydSize[0]): # go through robber locations
-			for j in range(floydSize[1]):
-				for objKey in self.objLocations.keys(): # go through objects
-					poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(self.objLocations[objKey].pose.position.y, self.objLocations[objKey].pose.position.x)
-					cost = self.floydWarshallCosts[i][j][poseGridLocY][poseGridLocX]
-					if cost != np.inf: #exclude wall locations
-						cost = (-1*cost) + self.objNames[objKey]
-						#rospy.loginfo(cost)
-						costArray.append(cost)
-					 #if we're going to normalize anyway, consider the value dimensionless in which case conversion doesn't matter
-		return max(costArray), np.mean(costArray), np.std(costArray)
+	# def findMaxCostBased(self): #Max is approx. 80 from file cabinet, (mean=2.7, std_dev=31.4)
+	# 	floydSize = self.floydWarshallCosts.shape
+	# 	maxCost = 0
+	# 	costArray = []
+	# 	print("Finding mean, std deviation of costs")
+	# 	# Need to run through each location of robber
+	# 	# Run through every cell in floydGrid
+	# 	for i in range(floydSize[0]): # go through robber locations
+	# 		for j in range(floydSize[1]):
+	# 			for objKey in self.objLocations.keys(): # go through objects
+	# 				poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(self.objLocations[objKey].pose.position.y, self.objLocations[objKey].pose.position.x)
+	# 				cost = self.floydWarshallCosts[i][j][poseGridLocY][poseGridLocX]
+	# 				if cost != np.inf: #exclude wall locations
+	# 					cost = (-1*cost) + self.objNames[objKey]
+	# 					#rospy.loginfo(cost)
+	# 					costArray.append(cost)
+	# 				 #if we're going to normalize anyway, consider the value dimensionless in which case conversion doesn't matter
+	# 	return max(costArray), np.mean(costArray), np.std(costArray)
 
 	# I need to comment this, investigate floyd algorithm file
 	def convertPoseToGridLocation(self, y, x):

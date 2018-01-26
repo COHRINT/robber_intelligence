@@ -15,6 +15,8 @@ __email__ = "sousheel.vunnam@colorado.edu"
 __status__ = ""
 
 from planner import GoalPlanner
+import tf
+import geometry_msgs.msg as geo_msgs
 
 class robberEvasionGoalPlanner(GoalPlanner):
 
@@ -35,57 +37,12 @@ class robberEvasionGoalPlanner(GoalPlanner):
 	rospy.wait_for_service('robberEvasionGoal')
     try:
         getRobberGoal = rospy.ServiceProxy('robberEvasionGoal', robberEvasionGoal)
-        resp1 = getRobberGoal(True)
-        return resp1.sum
+        goalResponse = getRobberGoal(True)
+		(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([goalResponse.pose.orientation.x, \
+        	goalResponse.pose.orientation.y, goalResponse.pose.orientation.z, goalResponse.pose.orientation.w])
+		# is this in radians or degrees?
+		theta = yaw
+		goal_pose = [goalResponse.pose.position.x, goalResponse.pose.position.y, theta]
+		return goal_pose
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
-# 		"""Find goal pose from POMDP policy translator server
-#
-
-# 		discrete_flag = True
-# 		if type(self.belief) is np.ndarray:
-# 			discrete_flag = True
-#
-# 		msg = None
-# 		if discrete_flag:
-# 			msg = DiscretePolicyTranslatorRequest()
-# 		else:
-# 			msg = PolicyTranslatorRequest()
-# 		msg.name = self.robot_name
-# 		res = None
-#
-# 		if discrete_flag:
-# 			msg.belief = discrete_dehydrate(self.belief)
-# 		else:
-# 			if self.belief is not None:
-# 				(msg.weights,msg.means,msg.variances) = dehydrate_msg(self.belief)
-# 			else:
-# 				msg.weights = []
-# 				msg.means = []
-# 				msg.variances = []
-#
-#                 print("Waiting for the POMDP Policy Service")
-# 		rospy.wait_for_service('translator')
-# 		try:
-# 			pt = rospy.ServiceProxy('translator',discrete_policy_translator_service)
-# 			res = pt(msg)
-# 		except rospy.ServiceException, e:
-# 			print "Service call failed: %s"%e
-#
-# 		if discrete_flag:
-# 			self.belief = discrete_rehydrate(res.response.belief_updated,self.shapes)
-# 		else:
-# 			self.belief = rehydrate_msg(res.response.weights_updated,
-# 											res.response.means_updated,
-# 											res.response.variances_updated)
-#
-# 		goal_pose = list(res.response.goal_pose)
-#
-# 		print("NEW GOAL POSE: {}".format(goal_pose))
-#
-#                 # Round the given goal pose
-#                 for i in range(len(goal_pose)):
-#                         goal_pose[i] = round(goal_pose[i], 2)
-# #                print("Rounded goal pose: {}".format(goal_pose))
-#
-# 		return goal_pose
+		return [0, 0, 0]
