@@ -192,35 +192,6 @@ class copDetection():
 		# self.cmd_vel_pub.publish(Twist())
 		rospy.sleep(1)
 
-	def findMaxCost(self): #Max is 1083, (mean=206.05962, std_dev=148.51310204559596)
-		floydSize = self.floydWarshallCosts.shape
-		maxCost = 0
-		costArray = []
-		print("Finding mean, std deviation of costs")
-		# Need to run through each location of robber to each object with each location of cop
-		# Run through every cell in floydGrid
-		for i in range(floydSize[0]): # go through robber locations
-		    for j in range(floydSize[1]):
-				for objKey in self.objLocations.keys(): # go through objects
-				 	poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(self.objLocations[objKey].pose.position.y, self.objLocations[objKey].pose.position.x)
-					path = self.makePath(i, j, poseGridLocY, poseGridLocX)
-					for k in range(floydSize[2]):
-						for l in range(floydSize[3]):
-							cost = 0
-							for point in path:
-								poseGridLocY, poseGridLocX = point
-								pointCost = self.floydWarshallCosts[k][l][poseGridLocY][poseGridLocX]
-								while pointCost == np.Inf:
-									poseGridLocY+=1
-									if poseGridLocY>39:
-										poseGridLocY = 0
-									pointCost = self.floydWarshallCosts[k][l][poseGridLocY][poseGridLocX]
-								cost += pointCost
-							costArray.append(cost)
-							# if cost>maxCost:
-							#     maxCost = cost
-
-		return np.mean(costArray), np.std(costArray)
 
 
 

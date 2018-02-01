@@ -57,35 +57,26 @@ class robberEvasion():
 		vertexvalues = self.objNames.values()
 
 		# Load Floyd Warshall info
-		self.mapGrid = np.load(parentDir + '/resources/mapGrid.npy')
-		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts20.npy')
+		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts.npy')
 		self.floydWarshallNextPlace = np.load(parentDir + '/resources/floydWarshallNextPlace.npy')
+		floydYaml = parentDir + '/resources/floydInfo.yaml'
+		floydInfo = getFloydInfo(floydYaml)
+		# Map Parameters
+		self.originY, self.originX = -3.6, -9.6 # ????
+		# mapSizeY, mapSizeX = 0.18, 0.34
+		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
+		# Distributions of cost/reward measures
+		copSafetyMean = 206.06
+		copSafetyStdDev = 148.51
+		self.copSafetyDistribution = scipy.stats.norm(copSafetyMean, copSafetyStdDev) #query with copSafetyDistribution.cdf(value)
+		costMax, meanCost, stdCost = 0, 2.7, 31.4 # self.findMaxCostBased()
+		self.objValueDistribution = scipy.stats.norm(meanCost,stdCost)
 
 		# Evasion Parameters
 		reevaluationTime = 3 # Time to wait before reevaluating the path robber is following
 		dangerWeight = 0.75 # Amount of danger before robber should choose a new path
 		self.copDangerVsObjValueWeight = 0.5
 
-		# Map Parameters
-		self.originY, self.originX = -3.6, -9.6 # ????
-		# mapSizeY, mapSizeX = 0.18, 0.34
-		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
-
-		# Distributions of cost/reward measures
-		copSafetyMean = 206.06
-		copSafetyStdDev = 148.51
-		self.copSafetyDistribution = scipy.stats.norm(copSafetyMean, copSafetyStdDev) #query with copSafetyDistribution.cdf(value)
-
-		#determine adjusted costs [OLD]
-		for objKey in self.objLocations.keys():
-			costs = self.evaluateFloydCostBased(self.objLocations[objKey])
-			rospy.loginfo(self.objNames[objKey])
-
-		#[NEW]
-		costMax, meanCost, stdCost = 0, 2.7, 31.4 # self.findMaxCostBased()
-		self.objValueDistribution = scipy.stats.norm(meanCost,stdCost)
-		#ospy.loginfo(self.findMaxCostBased())
-		rospy.loginfo(self.objValueDistribution.cdf(costMax))
 
 		# Begin Evasion
 		while not rospy.is_shutdown():
@@ -192,30 +183,10 @@ class robberEvasion():
 		cost = self.floydWarshallCosts[robGridLocY][robGridLocX][objGridLocY][objGridLocX]
 		return cost
 
-	# def findMaxCostBased(self): #Max is approx. 80 from file cabinet, (mean=2.7, std_dev=31.4)
-	# 	floydSize = self.floydWarshallCosts.shape
-	# 	maxCost = 0
-	# 	costArray = []
-	# 	print("Finding mean, std deviation of costs")
-	# 	# Need to run through each location of robber
-	# 	# Run through every cell in floydGrid
-	# 	for i in range(floydSize[0]): # go through robber locations
-	# 		for j in range(floydSize[1]):
-	# 			for objKey in self.objLocations.keys(): # go through objects
-	# 				poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(self.objLocations[objKey].pose.position.y, self.objLocations[objKey].pose.position.x)
-	# 				cost = self.floydWarshallCosts[i][j][poseGridLocY][poseGridLocX]
-	# 				if cost != np.inf: #exclude wall locations
-	# 					cost = (-1*cost) + self.objNames[objKey]
-	# 					#rospy.loginfo(cost)
-	# 					costArray.append(cost)
-	# 				 #if we're going to normalize anyway, consider the value dimensionless in which case conversion doesn't matter
-	# 	return max(costArray), np.mean(costArray), np.std(costArray)
-
 	# I need to comment this, investigate floyd algorithm file
 	def convertPoseToGridLocation(self, y, x):
 		y += -1*self.originY
 		x += -1*self.originX
-		# mapGridDimY, mapGridDimX = self.mapGrid.shape
 		gridLocY = int(y / self.mapSizeY)
 		gridLocX = int(x / self.mapSizeX)
 		return gridLocY, gridLocX
@@ -292,6 +263,15 @@ def getObjects(mapInfo):
 			objLocations[itemName] = itemLoc
 			objNames[itemName] = ([item['value']])
 	return objLocations, objNames
+
+def getFloydInfo(floydYaml):
+    with open(floydYaml, 'r') as stream:
+        try:
+            yamled = yaml.load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    return yamled
 
 
 def main():
