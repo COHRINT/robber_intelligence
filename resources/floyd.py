@@ -267,14 +267,8 @@ def getObjects(mapInfo):
             objNames[itemName] = ([item['value']])
     return objLocations, objNames, originY, originX
 
-<<<<<<< HEAD
-def createYaml(floydWarshallCosts, floydWarshallNextPlace, originY, originX, gridY, gridX):
-    # Get origin points from map2.yaml: min bounds of x/y
 
-
-=======
 def createYaml(floydWarshallCosts, floydWarshallNextPlace, gridY, gridX):
->>>>>>> 342a39c0c560b34101f9cc5973cabe224941b3da
     # Get list of objects, locations, and values
     curfilePath = os.path.abspath(__file__)
     curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
