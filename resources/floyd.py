@@ -284,10 +284,10 @@ def createYaml(floydWarshallCosts, floydWarshallNextPlace, gridY, gridX):
         'originX': originX,
         'mapSizeY': gridY,
         'mapSizeX': gridX,
-        'meanObjectValue': meanValue,
-        'stdObjectValue': stdValue,
-        'meanCopCost': meanCopCost,
-        'stdCopCost': stdCopCost
+        'meanObjectValue': float(meanValue),
+        'stdObjectValue': float(stdValue),
+        'meanCopCost': float(meanCopCost),
+        'stdCopCost': float(stdCopCost)
     }
     with open('floydInfo.yaml', 'w') as yaml_file:
         yaml.dump(floydYaml, yaml_file, default_flow_style=False)

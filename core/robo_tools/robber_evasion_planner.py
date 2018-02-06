@@ -45,4 +45,4 @@ class robberEvasionGoalPlanner(GoalPlanner):
 		goal_pose = [goalResponse.pose.position.x, goalResponse.pose.position.y, theta]
 		return goal_pose
     except rospy.ServiceException, e:
-		return [0, 0, 0]
+		return pose

@@ -77,16 +77,17 @@ class robberEvasion():
 		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts.npy')
 		self.floydWarshallNextPlace = np.load(parentDir + '/resources/floydWarshallNextPlace.npy')
 		floydYaml = parentDir + '/resources/floydInfo.yaml'
+		# Get map parameters and mean/std data
 		meanObjValue, stdObjValue, meanCopCost, stdCopCost = getFloydInfo(floydYaml)
 		# Map Parameters
-		self.originY, self.originX = -3.6, -9.6
-		self.mapSizeY, self.mapSizeX = 0.36, 0.68
+		# self.originY, self.originX = -3.6, -9.6
+		# self.mapSizeY, self.mapSizeX = 0.36, 0.68
 		# Distributions of cost/reward measures
-		copSafetyMean = 206.06
-		copSafetyStdDev = 148.51
-		self.copSafetyDistribution = scipy.stats.norm(copSafetyMean, copSafetyStdDev) #query with copSafetyDistribution.cdf(value)
-		costMax, meanCost, stdCost = 0, 2.7, 31.4 # self.findMaxCostBased()
-		self.objValueDistribution = scipy.stats.norm(meanCost,stdCost)
+		# copSafetyMean = 206.06
+		# copSafetyStdDev = 148.51
+		# costMax, meanCost, stdCost = 0, 2.7, 31.4 # self.findMaxCostBased()
+		self.objValueDistribution = scipy.stats.norm(meanObjValue,stdObjValue)
+		self.copSafetyDistribution = scipy.stats.norm(meanCopCost, stdCopCost) #query with copSafetyDistribution.cdf(value)
 
 		# Evasion Parameters
 		reevaluationTime = 3 # Time to wait before reevaluating the path robber is following
