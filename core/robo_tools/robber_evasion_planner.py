@@ -5,14 +5,14 @@ Robber Navigation
 Escapes from cops while stealing goods
 '''
 
-__author__ = ["Sousheel Vunnam", "Jamison McGinley"]
+__author__ = ["Sousheel Vunnam"]
 __copyright__ = "Copyright 2018, COHRINT"
 __credits__ = ["Nisar Ahmed", "Luke Barbier"]
 __license__ = "GPL"
 __version__ = "1.0.0"
 __maintainer__ = "Sousheel"
 __email__ = "sousheel.vunnam@colorado.edu"
-__status__ = ""
+__status__ = "Development"
 
 from planner import GoalPlanner
 import tf

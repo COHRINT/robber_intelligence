@@ -52,9 +52,6 @@ class robberEvasion():
 		parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
 		mapInfo = parentDir + '/models/map2.yaml'
 		self.objLocations, self.objNames = getObjects(mapInfo)
-		vertexes = self.objLocations.values()
-		vertexKeys = self.objLocations.keys()
-		vertexvalues = self.objNames.values()
 
 		# Load Floyd Warshall info
 		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts.npy')
