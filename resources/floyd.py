@@ -26,21 +26,23 @@ import std_msgs.msg as std_msgs
 
 
 def main():
-    gridScale = 0.5 # size of each grid rectangle compared to map size (makes a 20x20 grid)
-
-    costs, nextPlace, gridY, gridX = floydWarshallAlgorithm(.05)
-    originY = -3.6
-    Originx = -9.6
-    createYaml(costs, nextPlace, gridY, gridX)
-
-
-def floydWarshallAlgorithm(gridScale):
-    # Get map information
+    # Get map directory
     curfilePath = os.path.abspath(__file__)
     curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
     parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
+
+    # Map parameters
     mapImgLocation = parentDir + "/models/map2_occupancy.png"
-    mapInfoLocation = parentDir + "/models/map2_occupancy.yaml"
+    mapImgInfoLocation = parentDir + "/models/map2_occupancy.yaml"
+    mapInfoLocation = parentDir + "/models/map2.yaml"
+    gridScale = 0.05 # size of each grid rectangle compared to map size (makes a 20x20 grid)
+
+    costs, nextPlace, gridY, gridX = floydWarshallAlgorithm(mapImgLocation, mapImgInfoLocation, gridScale)
+    createYaml(mapInfoLocation, costs, nextPlace, gridY, gridX)
+
+
+def floydWarshallAlgorithm(mapImgLocation, mapInfoLocation, gridScale):
+    # Convert map to floyd grid
     mapGrid, gridY, gridX = convertMapToGrid(mapImgLocation, mapInfoLocation, gridScale)
 
     # Apply floyd warshall algorithm
@@ -49,8 +51,9 @@ def floydWarshallAlgorithm(gridScale):
     np.save('mapGrid', mapGrid)
     np.save('floydWarshallCosts', costs)
     np.save('floydWarshallNextPlace', nextPlace)
-    plt.imshow(mapGrid, interpolation='nearest')
-    plt.show()
+    # Display map
+    # plt.imshow(mapGrid, interpolation='nearest')
+    # plt.show()
     # floydWarshall.displayMap(costs, pose)
 
     return costs, nextPlace, gridY, gridX
@@ -82,7 +85,6 @@ def convertMapToGrid(mapImgLocation, mapInfoLocation, gridScale):
     gridIteratorY = range(0, pixHeight, gridPixelHeight)
     gridIteratorX = range(0, pixWidth, gridPixelWidth)
     grid = np.zeros((len(gridIteratorY), len(gridIteratorX)))
-    # grid = np.zeros((int(pixHeight/(pixHeight*gridScale)), int(pixWidth/(pixWidth*gridScale))))
 
     # Populate grid
     iGrid = 0
@@ -177,6 +179,27 @@ def makePath(floydWarshallNextPlace, ux, uy, vx, vy):
         path.append((ux, uy))
     return path
 
+
+def createYaml(mapInfoLocation, floydWarshallCosts, floydWarshallNextPlace, gridY, gridX):
+    # Get list of objects, locations, and values
+    objLocations, objNames, originY, originX = getObjects(mapInfoLocation)
+
+    meanValue, stdValue = findMaxValueBased(objLocations, objNames, floydWarshallCosts, originY, originX, gridY, gridX)
+    meanCopCost, stdCopCost = findMaxCopCost(objLocations, objNames, floydWarshallCosts, floydWarshallNextPlace, originY, originX, gridY, gridX)
+
+    floydYaml = {
+        'originY': originY,
+        'originX': originX,
+        'mapSizeY': gridY,
+        'mapSizeX': gridX,
+        'meanObjectValue': float(meanValue),
+        'stdObjectValue': float(stdValue),
+        'meanCopCost': float(meanCopCost),
+        'stdCopCost': float(stdCopCost)
+    }
+    with open('floydInfo.yaml', 'w') as yaml_file:
+        yaml.dump(floydYaml, yaml_file, default_flow_style=False)
+
 def displayMap(costs,pose=[0,3]):
 	#lets see what the cost looks like for a position
 	plt.imshow(costs[0,3]);
@@ -267,30 +290,6 @@ def getObjects(mapInfo):
             objNames[itemName] = ([item['value']])
     return objLocations, objNames, originY, originX
 
-
-def createYaml(floydWarshallCosts, floydWarshallNextPlace, gridY, gridX):
-    # Get list of objects, locations, and values
-    curfilePath = os.path.abspath(__file__)
-    curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
-    parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
-    mapInfo = parentDir + '/models/map2.yaml'
-    objLocations, objNames, originY, originX = getObjects(mapInfo)
-
-    meanValue, stdValue = findMaxValueBased(objLocations, objNames, floydWarshallCosts, originY, originX, gridY, gridX)
-    meanCopCost, stdCopCost = findMaxCopCost(objLocations, objNames, floydWarshallCosts, floydWarshallNextPlace, originY, originX, gridY, gridX)
-
-    floydYaml = {
-        'originY': originY,
-        'originX': originX,
-        'mapSizeY': gridY,
-        'mapSizeX': gridX,
-        'meanObjectValue': float(meanValue),
-        'stdObjectValue': float(stdValue),
-        'meanCopCost': float(meanCopCost),
-        'stdCopCost': float(stdCopCost)
-    }
-    with open('floydInfo.yaml', 'w') as yaml_file:
-        yaml.dump(floydYaml, yaml_file, default_flow_style=False)
 
 
 if __name__ == '__main__':

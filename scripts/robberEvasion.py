@@ -6,6 +6,8 @@ Robber Evasion Techniques
    the distance from the cop to every location on the robber's path to an object.
  - Object Value: The measure of the value of each object is defined by its inherent
    value and the distance to that object.
+
+   If using a new map, make sure to edit the map parameters in resources/floyd.py and run floyd.py in resources directory
 '''
 
 __author__ = ["Sousheel Vunnam", "Jamison McGinley"]
