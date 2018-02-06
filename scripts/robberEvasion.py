@@ -1,27 +1,46 @@
 #!/usr/bin/env python
 
-# Builds the costmap by evaluating where the cop is and its distance to everywhere else in the map
+'''
+Robber Evasion Techniques
+ - Cop Detection + Evasion: A heuristic measure of danger is created by analyzing
+   the distance from the cop to every location on the robber's path to an object.
+ - Object Value: The measure of the value of each object is defined by its inherent
+   value and the distance to that object.
+'''
 
-import yaml
+__author__ = ["Sousheel Vunnam", "Jamison McGinley"]
+__copyright__ = "Copyright 2018, COHRINT"
+__credits__ = ["Nisar Ahmed"]
+__license__ = "GPL"
+__version__ = "1.0.0"
+__maintainer__ = "Sousheel"
+__email__ = "sousheel.vunnam@colorado.edu"
+__status__ = "Development"
+
+
+ # Dependencies
 import math
 import tf
 import numpy as np
 import matplotlib.pyplot as plt
-import rospy
+import yaml
 import os.path
 import scipy.stats
-
+# ROS dependencies
+import rospy
 import actionlib
-import actionlib_msgs.msg as act_msgs # import *
-import geometry_msgs.msg as geo_msgs # geo_msgs.Pose, geo_msgs.PoseWithCovarianceStamped, geo_msgs.Point, geo_msgs.Quaternion, geo_msgs.Twist, geo_msgs.Vector3
-import move_base_msgs.msg as mov_msgs # import mov_msgs.MoveBaseAction, mov_msgs.MoveBaseGoal
+import actionlib_msgs.msg as act_msgs
+import geometry_msgs.msg as geo_msgs
+import move_base_msgs.msg as mov_msgs
 import std_msgs.msg as std_msgs
-import nav_msgs.srv as nav_srv
-import nav_msgs.msg as nav_msgs
 from robber_intelligence.srv import robberEvasionGoal
 
-class robberEvasion():
+def main():
+	robberEvasion(copName="zhora", robberName="deckard")
+	rospy.spin()
 
+# Robber evasion server node
+class robberEvasion():
 	def __init__(self, copName, robberName):
 		# Setup node
 		rospy.init_node('robberEvasion')
@@ -53,15 +72,15 @@ class robberEvasion():
 		mapInfo = parentDir + '/models/map2.yaml'
 		self.objLocations, self.objNames = getObjects(mapInfo)
 
-		# Load Floyd Warshall info
+		# Load Floyd Warshall info + map parameters
+		# NEED TO CHANGE AFTER CHECKING IF FLOYD WORKS
 		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts.npy')
 		self.floydWarshallNextPlace = np.load(parentDir + '/resources/floydWarshallNextPlace.npy')
 		floydYaml = parentDir + '/resources/floydInfo.yaml'
-		floydInfo = getFloydInfo(floydYaml)
+		meanObjValue, stdObjValue, meanCopCost, stdCopCost = getFloydInfo(floydYaml)
 		# Map Parameters
-		self.originY, self.originX = -3.6, -9.6 # ????
-		# mapSizeY, mapSizeX = 0.18, 0.34
-		self.mapSizeY, self.mapSizeX = 0.36, 0.68 # ?? is this map size in meters???
+		self.originY, self.originX = -3.6, -9.6
+		self.mapSizeY, self.mapSizeX = 0.36, 0.68
 		# Distributions of cost/reward measures
 		copSafetyMean = 206.06
 		copSafetyStdDev = 148.51
@@ -71,7 +90,7 @@ class robberEvasion():
 
 		# Evasion Parameters
 		reevaluationTime = 3 # Time to wait before reevaluating the path robber is following
-		dangerWeight = 0.75 # Amount of danger before robber should choose a new path
+		dangerWeight = 1.2 # Amount of danger before robber should choose a new path
 		self.copDangerVsObjValueWeight = 0.5
 
 
@@ -91,9 +110,8 @@ class robberEvasion():
 			# Send goal to planner
 			self.curRobberGoal = self.objLocations[curDestination].pose
 			self.mover_base.send_goal(goal)
-
-			# Would this make it so you wait for 2 seconds every time?
-			mover_base.wait_for_result(rospy.Duration(2))
+			# Wait for move base to begin
+			mover_base.wait_for_result(rospy.Duration(1))
 
 			# While robber is travelling to destination, evaluate the path it is following every few seconds
 			state = self.mover_base.get_state()
@@ -104,11 +122,11 @@ class robberEvasion():
 				print ("New Cost: " + str(newCost))
 
 				# Check if path is too dangerous
-				if newCost < curCost*dangerWeight:
+				if (newCost > curCost*dangerWeight):
 					pathFailure = True
 
 				# Display Costmap
-				copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
+				# copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
 				# plt.imshow(self.floydWarshallCosts[copGridLocY][copGridLocX]);
 				# plt.ion()
 				# plt.show();
@@ -147,40 +165,39 @@ class robberEvasion():
 		return maxCost, maxCostLocation
 
 
-	# ALSO need to comment this....
+	# Evaluates the cost of an object
 	def evaluateFloydCost(self, objPose, objKey):
+		# Convert to floyd grid locations
 		copGridLocY, copGridLocX = self.convertPoseToGridLocation(self.copLoc.pose.position.y , self.copLoc.pose.position.x)
 		robGridLocY, robGridLocX = self.convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
 		poseGridLocY, poseGridLocX = self.convertPoseToGridLocation(objPose.pose.position.y, objPose.pose.position.x)
+		# Make path from robber to object
 		path = self.makePath(robGridLocY, robGridLocX, poseGridLocY, poseGridLocX)
+
+		# Calculate cop danger by summing distance from cop to every location on robber's path
 		copCost = 0
-		# Calculate Cop Danger
 		for point in path:
 			poseGridLocY, poseGridLocX = point
 			pointCost = self.floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
+			# If grid location is impossible to get to, choose one above it to evaluate cost
+			# This could be improved on: check all locations around grid location
 			while pointCost == np.Inf:
 				poseGridLocY+=1
 				if poseGridLocY>39:
 					poseGridLocY = 0
 				pointCost = self.floydWarshallCosts[copGridLocY][copGridLocX][poseGridLocY][poseGridLocX]
 			copCost += pointCost
-		# Object Values
+		# Calculate value of object
 		objCost = self.floydWarshallCosts[robGridLocY][robGridLocX][poseGridLocY][poseGridLocX]
 		objCost = (-1*objCost) + self.objNames[objKey]
 		# Normalize costs
 		copCost = self.copSafetyDistribution.cdf(copCost)
 		objCost = self.objValueDistribution.cdf(objCost)
+		# Return cost heuristic
 		cost = self.copDangerVsObjValueWeight * copCost + (1-self.copDangerVsObjValueWeight) * objCost
 		return cost
 
-	def evaluateFloydCostBased(self, objects):
-		robGridLocY, robGridLocX = self.convertPoseToGridLocation(self.robLoc.pose.position.y, self.robLoc.pose.position.x)
-		# print(str(copGridLocX) + " " + str(copGridLocY))
-		objGridLocY, objGridLocX = self.convertPoseToGridLocation(objects.pose.position.y, objects.pose.position.x)
-		cost = self.floydWarshallCosts[robGridLocY][robGridLocX][objGridLocY][objGridLocX]
-		return cost
-
-	# I need to comment this, investigate floyd algorithm file
+	# Converts a pose to a location on floyd grid
 	def convertPoseToGridLocation(self, y, x):
 		y += -1*self.originY
 		x += -1*self.originX
@@ -188,21 +205,20 @@ class robberEvasion():
 		gridLocX = int(x / self.mapSizeX)
 		return gridLocY, gridLocX
 
+	# Callback functions to recieve cop and robber locations from ros topics
 	def getCopLocation(self, tfMsg):
 		self.pastCopLoc = self.copLoc
 		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(),
 			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z),
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
 		self.copLoc = poseMsg
-
-
 	def getRobberLocation(self, tfMsg):
 		poseMsg = geo_msgs.PoseStamped(std_msgs.Header(),
 			geo_msgs.Pose(geo_msgs.Point(tfMsg.transform.translation.x, tfMsg.transform.translation.y, tfMsg.transform.translation.z),
 			geo_msgs.Quaternion(tfMsg.transform.rotation.x, tfMsg.transform.rotation.y , tfMsg.transform.rotation.z, tfMsg.transform.rotation.w)))
 		self.robLoc = poseMsg
 
-
+	# Makes path between two locations on floyd grid
 	def makePath(self, ux, uy, vx, vy):
 		if self.floydWarshallNextPlace[ux, uy, vx, vy] == None:
 			return []
@@ -212,21 +228,41 @@ class robberEvasion():
 			path.append((ux, uy))
 		return path
 
-	def countPath(self, ux, uy, vx, vy):
-		x = 0
-		y = 0
-		startX = ux
-		startY = uy
-		if self.floydWarshallNextPlace[ux, uy, vx, vy] == None:
-			return []
-		path = [(ux, uy)]
-		while (ux != vx) or (uy != vy):
-			ux, uy = self.floydWarshallNextPlace[ux, uy, vx, vy]
-			path.append((ux, uy))
-			x = x + ux - startX
-			y = y + uy - startY
-		return x,y
+	# def countPath(self, ux, uy, vx, vy):
+	# 	x = 0
+	# 	y = 0
+	# 	startX = ux
+	# 	startY = uy
+	# 	if self.floydWarshallNextPlace[ux, uy, vx, vy] == None:
+	# 		return []
+	# 	path = [(ux, uy)]
+	# 	while (ux != vx) or (uy != vy):
+	# 		ux, uy = self.floydWarshallNextPlace[ux, uy, vx, vy]
+	# 		path.append((ux, uy))
+	# 		x = x + ux - startX
+	# 		y = y + uy - startY
+	# 	return x,y
 
+	# Reads floyd yaml file containing map and cost info that is specific to each map
+	def getFloydInfo(self, floydYaml):
+	    with open(floydYaml, 'r') as stream:
+	        try:
+	            yamled = yaml.load(stream)
+	        except yaml.YAMLError as exc:
+	            print(exc)
+
+		self.originY = yamled['originY']
+		self.originX = yamled['originX']
+		self.mapSizeY = yamled['mapSizeY']
+		self.mapSizeX = yamled['mapSizeX']
+		meanObjValue = yamled['meanObjectValue']
+		stdObjValue = yamled['stdObjectValue']
+		meanCopCost = yamled['meanCopCost']
+		stdCopCost = yamled['stdCopCost']
+
+	    return meanObjValue, stdObjValue, meanCopCost, stdCopCost
+
+	# On shutdown of the ROS node, the goal will be canceled
 	def shutDown(self):
 		rospy.loginfo("Stopping the robot...")
 		self.mover_base.cancel_goal()
@@ -235,7 +271,7 @@ class robberEvasion():
 		rospy.is_shutdown()
 
 
-
+# Gets info about objects from a map yaml file
 def getObjects(mapInfo):
 	with open(mapInfo, 'r') as stream:
 		try:
@@ -260,20 +296,6 @@ def getObjects(mapInfo):
 			objLocations[itemName] = itemLoc
 			objNames[itemName] = ([item['value']])
 	return objLocations, objNames
-
-def getFloydInfo(floydYaml):
-    with open(floydYaml, 'r') as stream:
-        try:
-            yamled = yaml.load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-
-    return yamled
-
-
-def main():
-	robberEvasion(copName="zhora", robberName="deckard")
-	rospy.spin()
 
 if __name__ == '__main__':
 	try:

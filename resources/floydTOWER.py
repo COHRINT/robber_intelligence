@@ -3,7 +3,7 @@
 """
 *************************************************
 File: floyd.py
-Author: Luke Burks, Sousheel Vunnam
+Author: Sousheel Vunnam, Luke Burks
 Date: November 2017
 
 Demonstrating a variation on the floyd warshall
@@ -26,23 +26,12 @@ import std_msgs.msg as std_msgs
 
 
 def main():
-    # #A 5x5 grid with a wall near the top
-    # grid = [[0,0,0,0,0],[0,1,1,1,0],[0,0,0,1,0],[0,0,0,0,0],[0,0,0,0,0]]
-    #
-    # #The cops position
-    # pose = [0,3];
-    #
-    # costs = floyds(grid);
-    # displayMap(costs,pose);
-
-
-
     gridScale = 0.5 # size of each grid rectangle compared to map size (makes a 20x20 grid)
 
     costs, nextPlace, gridY, gridX = floydWarshallAlgorithm(.05)
     originY = -3.6
     Originx = -9.6
-    createYaml(costs, nextPlace, originY, OriginX, gridY, gridX)
+    createYaml(costs, nextPlace, gridY, gridX)
 
 
 def floydWarshallAlgorithm(gridScale):
@@ -257,6 +246,9 @@ def getObjects(mapInfo):
         except yaml.YAMLError as exc:
             print(exc)
 
+    originY = yamled['info']['bounds']['min_y']
+    originX = yamled['info']['bounds']['min_x']
+
     # deletes info
     del yamled['info']
 
@@ -273,29 +265,34 @@ def getObjects(mapInfo):
             itemLoc = geo_msgs.PoseStamped(std_msgs.Header(), geo_msgs.Pose(geo_msgs.Point(x_loc, y_loc, 0), geo_msgs.Quaternion(quat[0],quat[1],quat[2],quat[3])))
             objLocations[itemName] = itemLoc
             objNames[itemName] = ([item['value']])
-    return objLocations, objNames
+    return objLocations, objNames, originY, originX
 
+<<<<<<< HEAD
 def createYaml(floydWarshallCosts, floydWarshallNextPlace, originY, originX, gridY, gridX):
     # Get origin points from map2.yaml: min bounds of x/y
 
 
+=======
+def createYaml(floydWarshallCosts, floydWarshallNextPlace, gridY, gridX):
+>>>>>>> 342a39c0c560b34101f9cc5973cabe224941b3da
     # Get list of objects, locations, and values
     curfilePath = os.path.abspath(__file__)
     curDir = os.path.abspath(os.path.join(curfilePath, os.pardir))
     parentDir = os.path.abspath(os.path.join(curDir, os.pardir))
     mapInfo = parentDir + '/models/map2.yaml'
-    objLocations, objNames = getObjects(mapInfo)
+    objLocations, objNames, originY, originX = getObjects(mapInfo)
 
     meanValue, stdValue = findMaxValueBased(objLocations, objNames, floydWarshallCosts, originY, originX, gridY, gridX)
     meanCopCost, stdCopCost = findMaxCopCost(objLocations, objNames, floydWarshallCosts, floydWarshallNextPlace, originY, originX, gridY, gridX)
 
-
     floydYaml = {
+        'originY': originY,
+        'originX': originX,
         'mapSizeY': gridY,
         'mapSizeX': gridX,
-        'meanObjectValue': meanValue, 
-        'stdObjectValue': stdValue, 
-        'meanCopCost': meanCopCost, 
+        'meanObjectValue': meanValue,
+        'stdObjectValue': stdValue,
+        'meanCopCost': meanCopCost,
         'stdCopCost': stdCopCost
     }
     with open('floydInfo.yaml', 'w') as yaml_file:
