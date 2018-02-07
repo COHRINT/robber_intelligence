@@ -80,7 +80,7 @@ class robberEvasion():
 		self.floydWarshallNextPlace = np.load(parentDir + '/resources/floydWarshallNextPlace.npy')
 		floydYaml = parentDir + '/resources/floydInfo.yaml'
 		# Get map parameters and mean/std data
-		meanObjValue, stdObjValue, meanCopCost, stdCopCost = getFloydInfo(floydYaml)
+		meanObjValue, stdObjValue, meanCopCost, stdCopCost = self.getFloydInfo(floydYaml)
 		# Map Parameters
 		# self.originY, self.originX = -3.6, -9.6
 		# self.mapSizeY, self.mapSizeX = 0.36, 0.68
@@ -114,7 +114,7 @@ class robberEvasion():
 			self.curRobberGoal = self.objLocations[curDestination].pose
 			self.mover_base.send_goal(goal)
 			# Wait for move base to begin
-			mover_base.wait_for_result(rospy.Duration(1))
+			self.mover_base.wait_for_result(rospy.Duration(1))
 
 			# While robber is travelling to destination, evaluate the path it is following every few seconds
 			state = self.mover_base.get_state()
