@@ -17,6 +17,7 @@ __status__ = "Development"
 from planner import GoalPlanner
 import tf
 import geometry_msgs.msg as geo_msgs
+import math
 
 class robberEvasionGoalPlanner(GoalPlanner):
 
@@ -36,13 +37,14 @@ class robberEvasionGoalPlanner(GoalPlanner):
 	"""
 	rospy.wait_for_service('robberEvasionGoal')
     try:
-        getRobberGoal = rospy.ServiceProxy('robberEvasionGoal', robberEvasionGoal)
-        goalResponse = getRobberGoal(True)
-		(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([goalResponse.pose.orientation.x, \
-        	goalResponse.pose.orientation.y, goalResponse.pose.orientation.z, goalResponse.pose.orientation.w])
-		# is this in radians or degrees?
-		theta = yaw
-		goal_pose = [goalResponse.pose.position.x, goalResponse.pose.position.y, theta]
-		return goal_pose
+		getRobberGoal = rospy.ServiceProxy('robberEvasionGoal', robberEvasionGoal)
+		goalResponse = getRobberGoal(True)
+		(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([goalResponse.robberGoalResponse.pose.orientation.x,
+			goalResponse.robberGoalResponse.pose.orientation.y, 
+			goalResponse.robberGoalResponse.pose.orientation.z, 
+			goalResponse.robberGoalResponse.pose.orientation.w]
+		)
+		theta = math.degrees(yaw)
+		goal_pose = [goalResponse.robberGoalResponse.pose.position.x, goalResponse.robberGoalResponse.pose.position.y, theta]
     except rospy.ServiceException, e:
 		return pose

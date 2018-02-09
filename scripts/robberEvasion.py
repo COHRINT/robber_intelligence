@@ -28,6 +28,8 @@ import matplotlib.pyplot as plt
 import yaml
 import os.path
 import scipy.stats
+import sys
+import signal
 # ROS dependencies
 import rospy
 import actionlib
@@ -38,7 +40,7 @@ import std_msgs.msg as std_msgs
 from robber_intelligence.srv import robberEvasionGoal
 
 def main():
-	robberEvasion(copName="zhora", robberName="deckard")
+	robberEvasion(copName="zhora", robberName="pris")
 	rospy.spin()
 
 # Robber evasion server node
@@ -46,6 +48,8 @@ class robberEvasion():
 	def __init__(self, copName, robberName):
 		# Setup node
 		rospy.init_node('robberEvasion')
+		# Setup on shutdown
+		signal.signal(signal.SIGINT, signal_handler)
 		#rospy.on_shutdown(self.shutDown) # Not Working
 
 		# Setup robber service
@@ -75,7 +79,6 @@ class robberEvasion():
 		self.objLocations, self.objNames = getObjects(mapInfo)
 
 		# Load Floyd Warshall info + map parameters
-		# NEED TO CHANGE AFTER CHECKING IF FLOYD WORKS
 		self.floydWarshallCosts = np.load(parentDir + '/resources/floydWarshallCosts.npy')
 		self.floydWarshallNextPlace = np.load(parentDir + '/resources/floydWarshallNextPlace.npy')
 		floydYaml = parentDir + '/resources/floydInfo.yaml'
@@ -111,7 +114,7 @@ class robberEvasion():
 			rospy.loginfo(goal)
 
 			# Send goal to planner
-			self.curRobberGoal = self.objLocations[curDestination].pose
+			self.curRobberGoal = self.objLocations[curDestination]
 			self.mover_base.send_goal(goal)
 			# Wait for move base to begin
 			self.mover_base.wait_for_result(rospy.Duration(1))
@@ -151,7 +154,8 @@ class robberEvasion():
 	# Sends goal of robber to robber_evasion_planner
 	def handleRobberSrv(self, req):
 		if req.isRunning:
-			return robberEvasionGoalResponse(self.curRobberGoal)
+			#return robberEvasionGoal(self.curRobberGoal)
+			return self.curRobberGoal
 
 
 	# Goes through entire list of objects and returns object with path that is least likely to be detected and its cost
@@ -231,21 +235,6 @@ class robberEvasion():
 			path.append((ux, uy))
 		return path
 
-	# def countPath(self, ux, uy, vx, vy):
-	# 	x = 0
-	# 	y = 0
-	# 	startX = ux
-	# 	startY = uy
-	# 	if self.floydWarshallNextPlace[ux, uy, vx, vy] == None:
-	# 		return []
-	# 	path = [(ux, uy)]
-	# 	while (ux != vx) or (uy != vy):
-	# 		ux, uy = self.floydWarshallNextPlace[ux, uy, vx, vy]
-	# 		path.append((ux, uy))
-	# 		x = x + ux - startX
-	# 		y = y + uy - startY
-	# 	return x,y
-
 	# Reads floyd yaml file containing map and cost info that is specific to each map
 	def getFloydInfo(self, floydYaml):
 	    with open(floydYaml, 'r') as stream:
@@ -299,6 +288,10 @@ def getObjects(mapInfo):
 			objLocations[itemName] = itemLoc
 			objNames[itemName] = ([item['value']])
 	return objLocations, objNames
+
+def signal_handler(signal, frame):
+        rospy.signal_shutdown("Stopping robber evasion server")
+        sys.exit(0)
 
 if __name__ == '__main__':
 	try:
