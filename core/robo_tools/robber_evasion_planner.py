@@ -18,6 +18,7 @@ from planner import GoalPlanner
 import tf
 import geometry_msgs.msg as geo_msgs
 import math
+from robber_intelligence.srv import robberEvasionGoal
 
 class robberEvasionGoalPlanner(GoalPlanner):
 
